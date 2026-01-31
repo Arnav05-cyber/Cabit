@@ -1,0 +1,12 @@
+# User request
+*.txt
+
+# Java / Maven / Gradle
+target/
+build/
+.gradle/
+.idea/
+*.class
+*.log
+*.imap
+.DS_Store
