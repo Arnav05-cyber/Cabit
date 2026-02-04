@@ -31,7 +31,7 @@ public class Ride {
     @Column(name = "departure_time")
     private LocalDateTime departureTime;
 
-    @Column(name = "fare")
+    @Column(name = "totalFare")
     private BigDecimal fare;
 
     @Column(name = "total_seats")
