@@ -24,3 +24,33 @@ This project prioritizes correct backend design, clear separation of concerns (c
 - **Kafka** (event-driven architecture)
 - **JWT-based Authentication** (external Auth Service)
 - **Microservice architecture**
+
+## System Flow (Current Status)
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Auth as Auth Service
+    participant UserSvc as User Service
+    participant Ride as Ride Service (Core Logic)
+
+    Note over User, Auth: Authentication Flow
+    User->>Auth: POST /auth/v1/signup (UserInfoDto)
+    Auth->>Auth: Save User & Generate Tokens
+    Auth-->>User: Returns JWT + Refresh Token
+
+    User->>Auth: POST /auth/v1/logout (Authorization Header)
+    Auth->>Auth: Validate Token & Delete Refresh Token
+    Auth-->>User: Logout Success
+
+    Note over User, UserSvc: User Management Flow
+    User->>UserSvc: POST /user/createUpdate (UserDto)
+    UserSvc->>UserSvc: Create or Update User
+    UserSvc-->>User: Returns UserDto
+
+    User->>UserSvc: GET /user/getUser (email)
+    UserSvc-->>User: Returns UserDto
+
+    Note over Ride: Ride Service Logic Implemented
+    Note right of Ride: Service Layer (RideServiceImpl) ready.<br/>Endpoints (Controller) pending.
+```
