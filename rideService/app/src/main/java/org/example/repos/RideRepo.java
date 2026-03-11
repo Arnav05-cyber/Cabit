@@ -13,5 +13,10 @@ public interface RideRepo extends JpaRepository<Ride, String> {
     public List<Ride> findByFareLessThanAndToLocation(BigDecimal fare, String toLocation);
     public List<Ride> findByToLocationAndRideStatus(String toLocation, String rideStatus);
     public List<Ride> findByToLocationAndSeatsAvailableGreaterThan(String toLocation, Integer seatsAvailable);
+    public List<Ride> findByRideId(String rideId);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query("UPDATE Ride r SET r.seatsAvailable = r.seatsAvailable - 1 WHERE r.rideId = :rideId AND r.seatsAvailable > 0")
+    int decrementSeatsAvailable(@org.springframework.data.repository.query.Param("rideId") String rideId);
 
 }

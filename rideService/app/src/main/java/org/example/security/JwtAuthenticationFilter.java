@@ -15,6 +15,7 @@ import java.util.List;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
     private final JwtUtil jwtUtil;
 
     public JwtAuthenticationFilter(JwtUtil jwtUtil) {
@@ -22,16 +23,40 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain
+    ) throws ServletException, IOException {
+
         String authHeader = request.getHeader("Authorization");
+
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
+
             String token = authHeader.substring(7);
 
-            String userName = jwtUtil.extactUserName(token);
+            try {
 
-            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userName, null, List.of());
+                String username = jwtUtil.extactUserName(token);
 
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+                if (SecurityContextHolder.getContext().getAuthentication() == null) {
+
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(
+                                    username,
+                                    null,
+                                    List.of()
+                            );
+
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
+
+            } catch (Exception e) {
+
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("Invalid or expired JWT token");
+                return;
+            }
         }
 
         filterChain.doFilter(request, response);

@@ -51,6 +51,20 @@ sequenceDiagram
     User->>UserSvc: GET /user/getUser (email)
     UserSvc-->>User: Returns UserDto
 
-    Note over Ride: Ride Service Logic Implemented
-    Note right of Ride: Service Layer (RideServiceImpl) ready.<br/>Endpoints (Controller) pending.
+    Note over Ride: Ride Service Implemented
+    User->>Ride: POST /rides (CreateRideRequest + JWT)
+    Ride->>Ride: Validate Token, Verify Input
+    Ride->>Ride: Save new Ride
+    Ride-->>User: Returns RideResponse
+
+    User->>Ride: POST /rides/{rideId}/join (JWT)
+    Ride->>Ride: Validate Token
+    Ride->>Ride: Atomic Seat Decrement
+    Ride-->>User: Returns Updated RideResponse
 ```
+
+### Recent Improvements
+- **Security:** Hardcoded secrets removed, JWT signature logic synchronized with Auth Service.
+- **Concurrency:** Atomic SQL updates implemented in JPA repository to prevent race conditions during ride bookings.
+- **Robustness:** Global Exception Handler added to gracefully handle custom exceptions (e.g., `RideServiceException`) and division-by-zero vulnerabilities mitigated.
+- **Validation:** Enforced `@Valid` annotations to validate incoming DTOs before they hit the service layer.

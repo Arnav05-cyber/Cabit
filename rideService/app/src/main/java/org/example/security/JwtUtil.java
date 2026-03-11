@@ -1,19 +1,21 @@
 package org.example.security;
 
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
-import javax.crypto.SecretKey;
-import java.security.KeyFactorySpi;
 
 @Component
 public class JwtUtil {
-    private final String secretKey = "mySecretKey12345678901234567890123456789012345678901234567890";
+    
+    @Value("${jwt.secret}")
+    private String secretKey;
 
     public String extactUserName(String token) {
+        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Jwts.parserBuilder()
-                .setSigningKey(Keys.hmacShaKeyFor(secretKey.getBytes()))
+                .setSigningKey(Keys.hmacShaKeyFor(keyBytes))
                 .build()
                 .parseClaimsJws(token)
                 .getBody()

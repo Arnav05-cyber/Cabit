@@ -11,9 +11,15 @@ import org.example.repos.RideBookingsRepo;
 import org.example.repos.RideRepo;
 import org.springframework.stereotype.Service;
 
+import javax.swing.text.html.Option;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+import static java.util.stream.Collectors.toList;
 
 @Service
 public class RideServiceImpl implements RideService{
@@ -27,6 +33,13 @@ public class RideServiceImpl implements RideService{
         this.rideBookingsRepo = rideBookingsRepo;
     }
 
+
+    private BigDecimal calculateFarePerPerson(Ride ride) {
+        if (ride.getTotalSeats() == null || ride.getTotalSeats() <= 0) {
+            return ride.getFare();
+        }
+        return ride.getFare().divide(BigDecimal.valueOf(ride.getTotalSeats()), RoundingMode.HALF_UP);
+    }
 
     @Override
     public RideResponse createRide(CreateRideRequest request, String userId) {
@@ -47,7 +60,7 @@ public class RideServiceImpl implements RideService{
 
         Ride savedRide = rideRepo.save(ride);
 
-        BigDecimal farePerPerson =  savedRide.getFare().divide(BigDecimal.valueOf(savedRide.getTotalSeats()), RoundingMode.HALF_UP);
+        BigDecimal farePerPerson = calculateFarePerPerson(savedRide);
 
         return new RideResponse(
                 savedRide.getRideId(),
@@ -83,8 +96,13 @@ public class RideServiceImpl implements RideService{
             throw new RuntimeException("Ride is not open for joining");
         }
 
+        int updatedRows = rideRepo.decrementSeatsAvailable(ride.getRideId());
+        if (updatedRows == 0) {
+            throw new RuntimeException("No seats available");
+        }
+        ride.setSeatsAvailable(ride.getSeatsAvailable() - 1);
 
-        BigDecimal farePerPerson = ride.getFare().divide(BigDecimal.valueOf(ride.getTotalSeats()), RoundingMode.HALF_UP);
+        BigDecimal farePerPerson = calculateFarePerPerson(ride);
 
         RideBookings booking = new RideBookings();
 
@@ -96,13 +114,10 @@ public class RideServiceImpl implements RideService{
 
         rideBookingsRepo.save(booking);
 
-        ride.setSeatsAvailable(ride.getSeatsAvailable() - 1);
-
         if (ride.getSeatsAvailable() == 0) {
             ride.setRideStatus("FULL");
+            rideRepo.save(ride);
         }
-
-        rideRepo.save(ride);
 
         return new RideResponse(
                 ride.getRideId(),
@@ -132,7 +147,7 @@ public class RideServiceImpl implements RideService{
             ride.setRideStatus("OPEN");
         }
 
-        BigDecimal farePerPerson = ride.getFare().divide(BigDecimal.valueOf(ride.getTotalSeats()), RoundingMode.HALF_UP);
+        BigDecimal farePerPerson = calculateFarePerPerson(ride);
 
         rideRepo.save(ride);
 
@@ -146,6 +161,53 @@ public class RideServiceImpl implements RideService{
                 ride.getRideStatus(),
                 farePerPerson
         );
+    }
+
+    @Override
+    public RideResponse getRide(String rideId) {
+         Ride ride = rideRepo.findById(rideId).orElseThrow(() -> new RuntimeException("Ride not found"));
+
+        BigDecimal farePerPerson = calculateFarePerPerson(ride);
+
+        return new RideResponse(
+                ride.getRideId(),
+                ride.getToLocation(),
+                ride.getFromLocation(),
+                ride.getDepartureTime(),
+                ride.getSeatsAvailable(),
+                ride.getFare(),
+                ride.getRideStatus(),
+                farePerPerson
+        );
+    }
+
+
+    @Override
+    public List<RideResponse> getAllRides() {
+
+        List<Ride> rides = rideRepo.findAll();
+
+        List<RideResponse> responses = new ArrayList<>();
+
+        for (Ride ride : rides) {
+
+            BigDecimal farePerPerson = calculateFarePerPerson(ride);
+
+            RideResponse response = new RideResponse(
+                    ride.getRideId(),
+                    ride.getToLocation(),
+                    ride.getFromLocation(),
+                    ride.getDepartureTime(),
+                    ride.getSeatsAvailable(),
+                    ride.getFare(),
+                    ride.getRideStatus(),
+                    farePerPerson
+            );
+
+            responses.add(response);
+        }
+
+        return responses;
     }
 
 }

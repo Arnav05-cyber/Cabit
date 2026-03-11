@@ -6,6 +6,8 @@ import org.example.dto.request.LeaveRideRequest;
 import org.example.dto.response.RideResponse;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 public interface RideService {
 
     RideResponse createRide(CreateRideRequest request, String userId);
@@ -13,4 +15,8 @@ public interface RideService {
 
     @Transactional
     RideResponse leaveRide(LeaveRideRequest request, String userId);
+
+    RideResponse getRide(String rideId);
+
+    List<RideResponse> getAllRides();
 }
