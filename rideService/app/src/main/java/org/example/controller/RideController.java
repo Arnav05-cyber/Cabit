@@ -7,14 +7,17 @@ import org.example.dto.request.LeaveRideRequest;
 import org.example.dto.response.RideResponse;
 
 
-import org.example.entities.Ride;
+
 import org.example.service.RideService;
 
 
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @AllArgsConstructor
@@ -56,9 +59,29 @@ public class RideController {
         return ride;
     }
 
-    @GetMapping("/getAllRides")
-    public List<RideResponse> getAllRides(){
-        return rideService.getAllRides();
+    @GetMapping
+    public Page<RideResponse> getAllRides(Pageable pageable){
+        Page<RideResponse> rides = rideService.getAllRides(pageable);
+        return rides;
+    }
+
+    @GetMapping
+    public Page<RideResponse> getRides(
+            @RequestParam(required = false) String toLocation,
+            @RequestParam(required = false) Boolean availableSeats,
+            @RequestParam(required = false) LocalDateTime after,
+            @RequestParam(required = false) LocalDateTime before,
+            Pageable pageable
+    ){
+        return rideService.getRides(toLocation, availableSeats, before, after, pageable);
+    }
+
+    @GetMapping("/match")
+    public List<RideResponse> matchRides(
+            @RequestParam String from,
+            @RequestParam String to
+    ) {
+        return rideService.matchRides(from, to);
     }
 
 

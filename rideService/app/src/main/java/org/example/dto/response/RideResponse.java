@@ -2,6 +2,7 @@ package org.example.dto.response;
 
 
 import lombok.*;
+import org.example.enums.RideStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -30,7 +31,7 @@ public class RideResponse {
 
     private BigDecimal totalFare;
 
-    private String rideStatus;
+    private RideStatus rideStatus;
 
     private BigDecimal farePerPerson;
 

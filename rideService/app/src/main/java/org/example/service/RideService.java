@@ -4,8 +4,12 @@ import org.example.dto.request.CreateRideRequest;
 import org.example.dto.request.JoinRideRequest;
 import org.example.dto.request.LeaveRideRequest;
 import org.example.dto.response.RideResponse;
+import org.example.entities.Ride;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface RideService {
@@ -18,5 +22,9 @@ public interface RideService {
 
     RideResponse getRide(String rideId);
 
-    List<RideResponse> getAllRides();
+    Page<RideResponse> getAllRides(Pageable pageable);
+
+    Page<RideResponse> getRides(String toLocation, Boolean availableSeats, LocalDateTime before, LocalDateTime after ,Pageable pageable);
+
+    List<RideResponse> matchRides(String fromLocation, String toLocation);
 }
