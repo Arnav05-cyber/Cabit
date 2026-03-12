@@ -5,6 +5,7 @@ import com.arnav.userService.entities.User;
 import com.arnav.userService.repo.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -14,6 +15,7 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
+    @Transactional
     public UserDto createOrUpdateUser(UserDto userDto) {
         Optional<User> existingUserOpt = userRepository.findByEmail(userDto.getEmail());
         

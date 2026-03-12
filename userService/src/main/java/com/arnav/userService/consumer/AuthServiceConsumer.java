@@ -29,7 +29,12 @@ public class AuthServiceConsumer {
             return;
         }
 
-        System.out.println("EVENT CONSUMED IN USER SERVICE: " + eventData);
-        userService.createOrUpdateUser(eventData);
+        try {
+            System.out.println("EVENT CONSUMED IN USER SERVICE: " + eventData);
+            userService.createOrUpdateUser(eventData);
+        } catch (Exception e) {
+            System.err.println("❌ Failed to process user event: " + e.getMessage());
+            // In a production specific environment, this is where you'd send to a DLQ
+        }
     }
 }

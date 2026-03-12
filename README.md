@@ -37,7 +37,7 @@ sequenceDiagram
     Note over User, Auth: Authentication Flow
     User->>Auth: POST /auth/v1/signup (UserInfoDto)
     Auth->>Auth: Save User & Generate Tokens
-    Auth-->>User: Returns JWT + Refresh Token
+    Auth-->>User: Returns JWT (15m expiry) + Refresh Token
 
     User->>Auth: POST /auth/v1/logout (Authorization Header)
     Auth->>Auth: Validate Token & Delete Refresh Token
@@ -45,26 +45,34 @@ sequenceDiagram
 
     Note over User, UserSvc: User Management Flow
     User->>UserSvc: POST /user/createUpdate (UserDto)
-    UserSvc->>UserSvc: Create or Update User
+    UserSvc->>UserSvc: createOrUpdateUser (@Transactional)
     UserSvc-->>User: Returns UserDto
+    
+    Note over Auth, UserSvc: Kafka Event Flow
+    Auth--)UserSvc: Emits new user event via Kafka
+    UserSvc->>UserSvc: AuthServiceConsumer consumes safely (try/catch)
 
-    User->>UserSvc: GET /user/getUser (email)
-    UserSvc-->>User: Returns UserDto
-
-    Note over Ride: Ride Service Implemented
+    Note over Ride: Ride Service Flow
     User->>Ride: POST /rides (CreateRideRequest + JWT)
-    Ride->>Ride: Validate Token, Verify Input
-    Ride->>Ride: Save new Ride
+    Ride->>Ride: Validate Token, Geocode & Route (External APIs)
+    Ride->>Ride: Save new Ride (Optimistic Locking via @Version)
     Ride-->>User: Returns RideResponse
 
     User->>Ride: POST /rides/{rideId}/join (JWT)
-    Ride->>Ride: Validate Token
+    Ride->>Ride: Check Available Seats (throws NoSeatsAvailableException if full)
     Ride->>Ride: Atomic Seat Decrement
     Ride-->>User: Returns Updated RideResponse
+    
+    User->>Ride: GET /rides/match?from=X&to=Y
+    Ride->>Ride: Query Open & Upcoming Rides (Database Indexed)
+    Ride->>Ride: Route Matching (Geo-filtering)
+    Ride-->>User: Returns Matched Rides
 ```
 
 ### Recent Improvements
-- **Security:** Hardcoded secrets removed, JWT signature logic synchronized with Auth Service.
-- **Concurrency:** Atomic SQL updates implemented in JPA repository to prevent race conditions during ride bookings.
-- **Robustness:** Global Exception Handler added to gracefully handle custom exceptions (e.g., `RideServiceException`) and division-by-zero vulnerabilities mitigated.
-- **Validation:** Enforced `@Valid` annotations to validate incoming DTOs before they hit the service layer.
+- **Security:** Externalized JWT secrets to application.properties and drastically reduced token expiry time.
+- **Concurrency:** Upgraded from just atomic SQL updates to full `@Version` Optimistic Locking in JPA for ride bookings.
+- **Robustness:** Added try/catch safeguards to Kafka Consumers and added `@Transactional` integrity to User creation.
+- **Exception Handling:** Replaced generic string-matching exceptions with strongly typed custom exceptions (`RideNotFoundException`, `NoSeatsAvailableException`, etc.)
+- **Performance:** Optimized geographic query matching by pre-filtering upcoming available rides via database queries and indexing (`@Index`) instead of loading all rides into memory.
+- **Architecture:** Externalized 3rd-party mapping API URLs for environment-specific deployment flexibility.

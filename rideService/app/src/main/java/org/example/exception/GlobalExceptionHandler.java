@@ -11,23 +11,18 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(RideServiceException.class)
-    public ResponseEntity<String> handleRideServiceException(RideServiceException ex) {
+    @ExceptionHandler({
+            RideNotFoundException.class,
+            NoSeatsAvailableException.class,
+            UserAlreadyJoinedException.class,
+            InvalidRideActionException.class
+    })
+    public ResponseEntity<String> handleSpecificRideExceptions(RideServiceException ex) {
         return ResponseEntity.badRequest().body(ex.getMessage());
     }
 
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<String> handleRuntimeException(RuntimeException ex) {
-        // Catching previously thrown generic RuntimeExceptions and turning them into 400s 
-        // until they are all migrated to RideServiceException
-        if (ex.getMessage() != null && (
-                ex.getMessage().contains("not found") ||
-                ex.getMessage().contains("No seats available") ||
-                ex.getMessage().contains("already joined") ||
-                ex.getMessage().contains("creator cannot") ||
-                ex.getMessage().contains("not open"))) {
-            return ResponseEntity.badRequest().body(ex.getMessage());
-        }
         return ResponseEntity.internalServerError().body("An unexpected error occurred: " + ex.getMessage());
     }
 
