@@ -59,11 +59,7 @@ public class RideController {
         return ride;
     }
 
-    @GetMapping
-    public Page<RideResponse> getAllRides(Pageable pageable){
-        Page<RideResponse> rides = rideService.getAllRides(pageable);
-        return rides;
-    }
+
 
     @GetMapping
     public Page<RideResponse> getRides(
@@ -83,6 +79,8 @@ public class RideController {
     ) {
         return rideService.matchRides(from, to);
     }
+
+
 
 
 }

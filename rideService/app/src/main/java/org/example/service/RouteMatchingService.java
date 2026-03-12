@@ -3,9 +3,11 @@ package org.example.service;
 import org.example.geo.DistanceCalculator;
 import org.example.geo.LatLang;
 import org.example.geo.PolylineDecoder;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+@Service
 public class RouteMatchingService {
 
     private static final double Match_Threshold = 5.0;

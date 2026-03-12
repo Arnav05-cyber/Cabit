@@ -26,6 +26,7 @@ public class GeocodingService {
                         .queryParam("format", "json")
                         .queryParam("limit", 1)
                         .build())
+                .header("User-Agent", "cabit-app")
                 .retrieve()
                 .bodyToMono(List.class)
                 .block();

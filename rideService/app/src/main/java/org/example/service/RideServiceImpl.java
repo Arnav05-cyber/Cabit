@@ -4,6 +4,8 @@ import org.example.dto.request.LeaveRideRequest;
 import org.example.entities.RideBookings;
 import org.example.enums.RideStatus;
 import org.example.geo.LatLang;
+import org.example.kafka.events.RideCreatedEvent;
+import org.example.kafka.producer.RideEventProducer;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -32,14 +34,16 @@ public class RideServiceImpl implements RideService{
     private final GeocodingService  geocodingService;
     private final RoutingService routingService;
     private final RouteMatchingService routeMatchingService;
+    private final RideEventProducer rideEventProducer;
 
 
-    public RideServiceImpl(RideRepo rideRepo, RideBookingsRepo rideBookingsRepo,  GeocodingService geocodingService, RoutingService routingService,  RouteMatchingService routeMatchingService) {
+    public RideServiceImpl(RideRepo rideRepo, RideBookingsRepo rideBookingsRepo,  GeocodingService geocodingService, RoutingService routingService,  RouteMatchingService routeMatchingService, RideEventProducer rideEventProducer) {
         this.rideRepo = rideRepo;
         this.rideBookingsRepo = rideBookingsRepo;
         this.geocodingService = geocodingService;
         this.routingService = routingService;
         this.routeMatchingService = routeMatchingService;
+        this.rideEventProducer = rideEventProducer;
     }
 
 
@@ -75,6 +79,18 @@ public class RideServiceImpl implements RideService{
         ride.setCreatedAt(LocalDateTime.now());
 
         Ride savedRide = rideRepo.save(ride);
+
+        RideCreatedEvent event = new  RideCreatedEvent(
+                savedRide.getRideId(),
+                savedRide.getCreaterId(),
+                savedRide.getFromLocation(),
+                savedRide.getToLocation(),
+                savedRide.getDepartureTime(),
+                savedRide.getTotalSeats(),
+                savedRide.getFare()
+        );
+
+        rideEventProducer.publishRideCreatedEvent(event);
 
         BigDecimal farePerPerson = calculateFarePerPerson(savedRide);
 
