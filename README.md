@@ -33,6 +33,7 @@ sequenceDiagram
     participant Auth as Auth Service
     participant UserSvc as User Service
     participant Ride as Ride Service (Core Logic)
+    participant Kafka as Kafka Broker
 
     Note over User, Auth: Authentication Flow
     User->>Auth: POST /auth/v1/signup (UserInfoDto)
@@ -56,6 +57,7 @@ sequenceDiagram
     User->>Ride: POST /rides (CreateRideRequest + JWT)
     Ride->>Ride: Validate Token, Geocode & Route (External APIs)
     Ride->>Ride: Save new Ride (Optimistic Locking via @Version)
+    Ride--)Kafka: Publishes RideCreatedEvent
     Ride-->>User: Returns RideResponse
 
     User->>Ride: POST /rides/{rideId}/join (JWT)
@@ -71,6 +73,7 @@ sequenceDiagram
 
 ### Recent Improvements
 - **Security:** Externalized JWT secrets to application.properties and drastically reduced token expiry time.
+- **Microservices/Event-Driven:** Added Kafka Producer (`RideEventProducer`) in Ride Service to publish `RideCreatedEvent` upon new ride creation.
 - **Concurrency:** Upgraded from just atomic SQL updates to full `@Version` Optimistic Locking in JPA for ride bookings.
 - **Robustness:** Added try/catch safeguards to Kafka Consumers and added `@Transactional` integrity to User creation.
 - **Exception Handling:** Replaced generic string-matching exceptions with strongly typed custom exceptions (`RideNotFoundException`, `NoSeatsAvailableException`, etc.)
