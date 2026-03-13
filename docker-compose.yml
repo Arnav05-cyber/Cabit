@@ -14,68 +14,62 @@ services:
     image: redis:alpine
     ports:
       - "6379:6379"
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "22181:2181"
 
-  # Kafka (using KRaft mode - no Zookeeper needed)
   kafka:
-    image: bitnami/kafka:latest
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
     ports:
       - "9092:9092"
+      - "29092:29092"
     environment:
-      - KAFKA_CFG_NODE_ID=0
-      - KAFKA_CFG_PROCESS_ROLES=controller,broker
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
-      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-
-  # --- KONG GATEWAY ---
-  kong:
-    image: kong:latest
-    environment:
-      KONG_DATABASE: "off" # We'll use declarative config (dbless)
-      KONG_PROXY_LISTEN: 0.0.0.0:8000
-      KONG_ADMIN_LISTEN: 0.0.0.0:8001
-    ports:
-      - "8000:8000" # Public API Port
-      - "8001:8001" # Admin Port
-    volumes:
-      - ./kong.yml:/usr/local/kong/declarative/kong.yml
-
-  # --- CABIT MICROSERVICES ---
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
   auth-service:
-    build: 
-      context: ./authService
-    image: authService-cabit
+    build: ./authService
+    image: auth-service
     ports:
       - "8081:8081"
-    depends_on:
-      - mysql
 
   user-service:
-    build: 
-      context: ./userService
-    image: userService-cabit
+    build: ./userService
+    image: user-service
     ports:
-      - "8083:8083"
+      - "8086:8086"
     depends_on:
-      - mysql
+      - auth-service
 
   ride-service:
-    build: 
-      context: ./rideService
-    image: rideService-cabit
+    build: ./rideService
+    image: ride-service
     ports:
       - "8082:8082"
     depends_on:
-      - mysql
-      - redis
+      - auth-service
+      - user-service
       - kafka
+      - redis
+    environment:
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
 
   notification-service:
-    build: 
-      context: ./notificationservice
-    image: notificationservice-cabit
+    build: ./notificationservice
+    image: notification-service
     ports:
       - "8084:8084"
     depends_on:
+      - ride-service
       - kafka
+    environment:
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
