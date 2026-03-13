@@ -97,3 +97,19 @@ sequenceDiagram
 - **Robustness:** Added try/catch safeguards to Kafka Consumers and added `@Transactional` integrity to User creation.
 - **Exception Handling:** Replaced generic string-matching exceptions with strongly typed custom exceptions.
 - **Architecture:** Externalized 3rd-party mapping API URLs for environment-specific deployment flexibility.
+
+## Running Locally with Docker Compose
+
+You can spin up the entire architecture (MySQL, Redis, Kafka using KRaft, Kong API Gateway, and all 4 microservices) effortlessly using Docker Compose.
+
+1. First, build the Gradle artifacts for all microservices:
+   ```bash
+   ./gradlew clean build
+   ```
+2. Then, start the infrastructure and services:
+   ```bash
+   docker-compose up --build -d
+   ```
+
+This will build the Docker images (`authService-cabit`, `userService-cabit`, `rideService-cabit`, `notificationservice-cabit`) and start all dependencies.
+
