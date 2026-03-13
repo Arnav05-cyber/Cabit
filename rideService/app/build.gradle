@@ -49,6 +49,9 @@ dependencies {
     /* ================= SERVICE COMMUNICATION ================= */
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign:4.1.0'
 
+    /* ================= REDIS ================= */
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
     /*==================WebClient==================*/
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
 

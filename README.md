@@ -22,8 +22,10 @@ This project prioritizes correct backend design, clear separation of concerns (c
 - **Spring Data JPA (Hibernate)**
 - **MySQL**
 - **Kafka** (event-driven architecture)
+- **Redis** (Geospatial querying, caching)
+- **WebSockets & STOMP** (real-time notification delivery)
 - **JWT-based Authentication** (external Auth Service)
-- **Microservice architecture**
+- **Microservices architecture** (Auth, User, Ride, Notification)
 
 ## System Flow (Current Status)
 
@@ -33,7 +35,9 @@ sequenceDiagram
     participant Auth as Auth Service
     participant UserSvc as User Service
     participant Ride as Ride Service (Core Logic)
+    participant Redis as Redis (Geo & Cache)
     participant Kafka as Kafka Broker
+    participant Notif as Notification Service
 
     Note over User, Auth: Authentication Flow
     User->>Auth: POST /auth/v1/signup (UserInfoDto)
@@ -53,29 +57,43 @@ sequenceDiagram
     Auth--)UserSvc: Emits new user event via Kafka
     UserSvc->>UserSvc: AuthServiceConsumer consumes safely (try/catch)
 
+    Note over User, Notif: Real-Time Notification Flow
+    User->>Notif: Connect via WebSocket (STOMP)
+    Notif-->>User: Connected
+    User->>Notif: Subscribe to /topic/ride-updates
+
     Note over Ride: Ride Service Flow
     User->>Ride: POST /rides (CreateRideRequest + JWT)
     Ride->>Ride: Validate Token, Geocode & Route (External APIs)
     Ride->>Ride: Save new Ride (Optimistic Locking via @Version)
+    Ride->>Redis: Save Ride Location for Geo-Search
     Ride--)Kafka: Publishes RideCreatedEvent
     Ride-->>User: Returns RideResponse
+
+    Kafka--)Notif: Consumes RideCreatedEvent
+    Notif->>User: Emits WebSocket message to subscribers
 
     User->>Ride: POST /rides/{rideId}/join (JWT)
     Ride->>Ride: Check Available Seats (throws NoSeatsAvailableException if full)
     Ride->>Ride: Atomic Seat Decrement
+    Ride--)Kafka: Publishes RideJoinedEvent
     Ride-->>User: Returns Updated RideResponse
     
+    Kafka--)Notif: Consumes RideJoinedEvent
+    Notif->>User: Emits WebSocket message to subscribers
+
     User->>Ride: GET /rides/match?from=X&to=Y
-    Ride->>Ride: Query Open & Upcoming Rides (Database Indexed)
-    Ride->>Ride: Route Matching (Geo-filtering)
+    Ride->>Redis: Geo-search nearby rides (GEORADIUS)
+    Ride->>Ride: Query Open & Upcoming Rides from result
     Ride-->>User: Returns Matched Rides
 ```
 
 ### Recent Improvements
+- **Real-Time Notifications:** Integrated **Notification Service** using WebSocket and STOMP, driven by Kafka events (`RideCreatedEvent`, `RideJoinedEvent`, `RideLeftEvent`), to deliver instant updates to users.
+- **Geospatial Queries & Caching:** Integrated **Redis** for performant geospatial queries (e.g., finding nearby rides via `RedisGeoService`) and caching.
 - **Security:** Externalized JWT secrets to application.properties and drastically reduced token expiry time.
-- **Microservices/Event-Driven:** Added Kafka Producer (`RideEventProducer`) in Ride Service to publish `RideCreatedEvent` upon new ride creation.
+- **Microservices/Event-Driven:** Added Kafka Producer (`RideEventProducer`) in Ride Service to publish domain events decoupled from processing.
 - **Concurrency:** Upgraded from just atomic SQL updates to full `@Version` Optimistic Locking in JPA for ride bookings.
 - **Robustness:** Added try/catch safeguards to Kafka Consumers and added `@Transactional` integrity to User creation.
-- **Exception Handling:** Replaced generic string-matching exceptions with strongly typed custom exceptions (`RideNotFoundException`, `NoSeatsAvailableException`, etc.)
-- **Performance:** Optimized geographic query matching by pre-filtering upcoming available rides via database queries and indexing (`@Index`) instead of loading all rides into memory.
+- **Exception Handling:** Replaced generic string-matching exceptions with strongly typed custom exceptions.
 - **Architecture:** Externalized 3rd-party mapping API URLs for environment-specific deployment flexibility.
