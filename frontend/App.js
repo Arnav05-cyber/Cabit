@@ -1,10 +1,11 @@
+import 'react-native-gesture-handler';
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { WebSocketProvider } from './src/context/WebSocketContext';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, View, Text } from 'react-native';
 
 // Import Screens
 import LoginScreen from './src/screens/auth/LoginScreen';
@@ -111,6 +112,10 @@ function RootNavigator() {
 }
 
 export default function App() {
+  console.log("LoginScreen:", LoginScreen);
+  console.log("RegisterScreen:", RegisterScreen);
+  console.log("MainTabs:", MainTabs);
+  console.log("RideDetailScreen:", RideDetailScreen);
   return (
     <AuthProvider>
       <WebSocketProvider>

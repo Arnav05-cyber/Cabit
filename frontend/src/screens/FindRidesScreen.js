@@ -13,12 +13,14 @@ import {
 } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
 import polyline from '@mapbox/polyline';
-import { rideApi } from '../../api/apiClient';
-import RideCard from '../../components/RideCard';
+import { rideApi } from '../api/apiClient';
+import RideCard from '../components/RideCard';
+import { useAuth } from '../context/AuthContext';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function FindRidesScreen({ navigation }) {
+  const { user } = useAuth();
   const [rides, setRides] = useState([]);
   const [filteredRides, setFilteredRides] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -32,8 +34,10 @@ export default function FindRidesScreen({ navigation }) {
     try {
       const response = await rideApi.get('/rides');
       const data = Array.isArray(response.data) ? response.data : response.data.content || [];
-      setRides(data);
-      setFilteredRides(data);
+      // Filter out rides created by the current user
+      const othersRides = data.filter(r => r.createrId !== user?.name);
+      setRides(othersRides);
+      setFilteredRides(othersRides);
     } catch (err) {
       Alert.alert('Error', 'Failed to load rides. Please check your connection.');
       console.error('Fetch rides error:', err);
@@ -144,10 +148,10 @@ export default function FindRidesScreen({ navigation }) {
         >
           {filteredRides.map((ride) => {
             const coords = getMarkerCoords(ride);
-            const isSelected = selectedRide?.id === ride.id;
+            const isSelected = selectedRide?.rideId === ride.rideId;
             return (
               <Marker
-                key={ride.id}
+                key={ride.rideId || Math.random().toString()}
                 coordinate={coords}
                 onPress={() => handleSelectRide(ride)}
                 title={ride.fromLocation}
@@ -220,14 +224,14 @@ export default function FindRidesScreen({ navigation }) {
         ) : (
           <FlatList
             data={filteredRides}
-            keyExtractor={(item) => String(item.id)}
+            keyExtractor={(item) => String(item.rideId)}
             renderItem={({ item }) => (
               <RideCard
                 ride={item}
-                isSelected={selectedRide?.id === item.id}
+                isSelected={selectedRide?.rideId === item.rideId}
                 onPress={() => {
                   handleSelectRide(item);
-                  navigation.navigate('RideDetail', { rideId: item.id, ride: item });
+                  navigation.navigate('RideDetail', { rideId: item.rideId, ride: item });
                 }}
                 onMapPress={() => handleSelectRide(item)}
               />

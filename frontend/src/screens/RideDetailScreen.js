@@ -11,14 +11,15 @@ import {
 } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
 import polyline from '@mapbox/polyline';
-import { rideApi } from '../../api/apiClient';
-import { useWebSocket } from '../../context/WebSocketContext';
+import { rideApi } from '../api/apiClient';
+import { useWebSocket } from '../context/WebSocketContext';
 
 export default function RideDetailScreen({ route, navigation }) {
   const { rideId, ride: initialRide } = route.params || {};
   const [ride, setRide] = useState(initialRide || null);
   const [loading, setLoading] = useState(!initialRide);
   const [joining, setJoining] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const [decodedPath, setDecodedPath] = useState([]);
   const { subscribe, unsubscribe, connected } = useWebSocket();
 
@@ -83,6 +84,21 @@ export default function RideDetailScreen({ route, navigation }) {
       Alert.alert('Error', msg);
     } finally {
       setJoining(false);
+    }
+  };
+
+  const handleLeaveRide = async () => {
+    setLeaving(true);
+    try {
+      await rideApi.post(`/rides/${rideId}/leave`);
+      Alert.alert('✅ Left Ride', "You've successfully left this ride.", [
+        { text: 'OK', onPress: () => navigation.goBack() },
+      ]);
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to leave ride.';
+      Alert.alert('Error', msg);
+    } finally {
+      setLeaving(false);
     }
   };
 
@@ -222,20 +238,34 @@ export default function RideDetailScreen({ route, navigation }) {
           </View>
         )}
 
-        {/* Join Button */}
-        <TouchableOpacity
-          style={[styles.joinButton, isFull && styles.joinButtonDisabled]}
-          onPress={handleJoinRide}
-          disabled={joining || isFull}
-        >
-          {joining ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.joinButtonText}>
-              {isFull ? '😔 Ride Full' : '🚗 Join this Ride'}
-            </Text>
-          )}
-        </TouchableOpacity>
+        {/* Join/Leave Buttons */}
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <TouchableOpacity
+            style={[styles.joinButton, isFull && styles.joinButtonDisabled, { flex: 1 }]}
+            onPress={handleJoinRide}
+            disabled={joining || isFull}
+          >
+            {joining ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.joinButtonText}>
+                {isFull ? '😔 Ride Full' : '🚗 Join'}
+              </Text>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.joinButton, { backgroundColor: '#E53935', flex: 1 }]}
+            onPress={handleLeaveRide}
+            disabled={leaving}
+          >
+            {leaving ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.joinButtonText}>❌ Leave</Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </View>
   );

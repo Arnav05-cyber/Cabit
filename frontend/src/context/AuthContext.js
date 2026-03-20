@@ -28,10 +28,12 @@ export const AuthProvider = ({ children }) => {
     loadToken();
   }, []);
 
-  const login = async (email, password) => {
-    const response = await authApi.post('/auth/login', { email, password });
-    const { token: jwt, ...userData } = response.data;
+  const login = async (username, password) => {
+    const response = await authApi.post('/auth/v1/login', { userName: username, password });
+    const { accessToken: jwt, token: refreshToken, userName, email: userEmail } = response.data;
+    const userData = { name: userName || username, email: userEmail };
     await SecureStore.setItemAsync('jwt_token', jwt);
+    if (refreshToken) await SecureStore.setItemAsync('refresh_token', refreshToken);
     await SecureStore.setItemAsync('user_data', JSON.stringify(userData));
     setToken(jwt);
     setUser(userData);
@@ -39,9 +41,20 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (name, email, password) => {
-    const response = await authApi.post('/auth/register', { name, email, password });
-    const { token: jwt, ...userData } = response.data;
+    const nameParts = name.trim().split(' ');
+    const firstName = nameParts[0];
+    const lastName = nameParts.slice(1).join(' ') || firstName;
+    const response = await authApi.post('/auth/v1/signup', {
+      userName: name,
+      firstName,
+      lastName,
+      email,
+      password,
+    });
+    const { accessToken: jwt, token: refreshToken, userName, email: userEmail } = response.data;
+    const userData = { name: userName || name, email: userEmail || email };
     await SecureStore.setItemAsync('jwt_token', jwt);
+    if (refreshToken) await SecureStore.setItemAsync('refresh_token', refreshToken);
     await SecureStore.setItemAsync('user_data', JSON.stringify(userData));
     setToken(jwt);
     setUser(userData);
@@ -50,6 +63,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     await SecureStore.deleteItemAsync('jwt_token');
+    await SecureStore.deleteItemAsync('refresh_token');
     await SecureStore.deleteItemAsync('user_data');
     setToken(null);
     setUser(null);

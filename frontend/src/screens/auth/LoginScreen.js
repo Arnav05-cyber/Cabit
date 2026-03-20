@@ -11,22 +11,22 @@ import {
   Platform,
   Image,
 } from 'react-native';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 export default function LoginScreen({ navigation }) {
   const { login } = useAuth();
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
+    if (!username.trim() || !password.trim()) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
     setLoading(true);
     try {
-      await login(email.trim(), password);
+      await login(username.trim(), password);
     } catch (err) {
       const msg = err.response?.data?.message || 'Invalid credentials. Please try again.';
       Alert.alert('Login Failed', msg);
@@ -69,8 +69,7 @@ export default function LoginScreen({ navigation }) {
           <Text style={{ fontSize: 22, fontWeight: '700', color: '#1A237E', marginBottom: 4 }}>Welcome back</Text>
           <Text style={{ fontSize: 14, color: '#78909C', marginBottom: 24 }}>Sign in to your account</Text>
 
-          {/* Email */}
-          <Text style={{ fontSize: 12, color: '#546E7A', fontWeight: '600', marginBottom: 6 }}>EMAIL</Text>
+          <Text style={{ fontSize: 12, color: '#546E7A', fontWeight: '600', marginBottom: 6 }}>USERNAME</Text>
           <TextInput
             style={{
               backgroundColor: '#F5F7FF',
@@ -82,12 +81,12 @@ export default function LoginScreen({ navigation }) {
               borderWidth: 1,
               borderColor: '#E3F2FD',
             }}
-            placeholder="your@university.edu"
+            placeholder="Your username (e.g., Arnav vyas)"
             placeholderTextColor="#B0BEC5"
-            keyboardType="email-address"
             autoCapitalize="none"
-            value={email}
-            onChangeText={setEmail}
+            autoCorrect={false}
+            value={username}
+            onChangeText={setUsername}
           />
 
           {/* Password */}

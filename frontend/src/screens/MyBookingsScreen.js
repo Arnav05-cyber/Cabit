@@ -9,9 +9,11 @@ import {
   RefreshControl,
   StyleSheet,
 } from 'react-native';
-import { rideApi } from '../../api/apiClient';
-import RideCard from '../../components/RideCard';
-import { useAuth } from '../../context/AuthContext';
+import { rideApi } from '../api/apiClient';
+import RideCard from '../components/RideCard';
+import { useAuth } from '../context/AuthContext';
+
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function MyBookingsScreen({ navigation }) {
   const { user, logout } = useAuth();
@@ -50,9 +52,11 @@ export default function MyBookingsScreen({ navigation }) {
     }
   }, []);
 
-  useEffect(() => {
-    fetchBookings();
-  }, [fetchBookings]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchBookings();
+    }, [fetchBookings])
+  );
 
   const handleLogout = () => {
     Alert.alert(

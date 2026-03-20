@@ -12,7 +12,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { rideApi } from '../../api/apiClient';
+import { rideApi } from '../api/apiClient';
 
 export default function OfferRideScreen({ navigation }) {
   const [fromLocation, setFromLocation] = useState('');
@@ -58,6 +58,35 @@ export default function OfferRideScreen({ navigation }) {
     }
   };
 
+  const handleOpenPicker = () => {
+    if (Platform.OS === 'android') {
+      import('@react-native-community/datetimepicker').then(({ DateTimePickerAndroid }) => {
+        DateTimePickerAndroid.open({
+          value: departureTime,
+          mode: 'date',
+          minimumDate: new Date(),
+          onChange: (event, selectedDate) => {
+            if (event.type === 'set' && selectedDate) {
+              setDepartureTime(selectedDate);
+              // Open time picker right after date is selected
+              DateTimePickerAndroid.open({
+                value: selectedDate,
+                mode: 'time',
+                onChange: (tEvent, tDate) => {
+                  if (tEvent.type === 'set' && tDate) {
+                    setDepartureTime(tDate);
+                  }
+                },
+              });
+            }
+          },
+        });
+      });
+    } else {
+      setShowDatePicker(true);
+    }
+  };
+
   const inputStyle = styles.input;
   const labelStyle = styles.label;
 
@@ -96,7 +125,7 @@ export default function OfferRideScreen({ navigation }) {
           <Text style={styles.sectionTitle}>🕐 Departure</Text>
           <TouchableOpacity
             style={styles.dateButton}
-            onPress={() => setShowDatePicker(true)}
+            onPress={handleOpenPicker}
           >
             <Text style={styles.dateIcon}>📅</Text>
             <View>
@@ -111,7 +140,7 @@ export default function OfferRideScreen({ navigation }) {
             <Text style={{ marginLeft: 'auto', color: '#1565C0', fontWeight: '700' }}>Change</Text>
           </TouchableOpacity>
 
-          {showDatePicker && (
+          {Platform.OS === 'ios' && showDatePicker && (
             <DateTimePicker
               value={departureTime}
               mode="datetime"
