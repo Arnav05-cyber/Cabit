@@ -19,16 +19,23 @@ public class RefreshTokenService {
     @Autowired RefreshTokenRepo refreshTokenRepo;
     @Autowired UserRepo userRepo;
 
+    @Autowired
+    @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
+    jakarta.persistence.EntityManager entityManager;
+
     @Transactional
     public RefreshToken createRefreshToken(String userName) {
         UserInfo user = userRepo.findByUserName(userName);
 
-        // Delete any existing refresh token for this user (FIXES DUPLICATE ISSUE)
-        refreshTokenRepo.findByUserInfo(user).ifPresent(refreshTokenRepo::delete);
+        // Delete any existing refresh token for this user
+        refreshTokenRepo.findByUserInfo(user).ifPresent(existing -> {
+            refreshTokenRepo.delete(existing);
+            entityManager.flush(); // Force the DELETE to be committed before the INSERT
+        });
 
         RefreshToken refreshToken = RefreshToken.builder()
                 .token(UUID.randomUUID().toString())
-                .expiryDate(Instant.now().plusSeconds(60 * 60 * 24 * 7))  // Changed to 7 days
+                .expiryDate(Instant.now().plusSeconds(60 * 60 * 24 * 7))  // 7 days
                 .userInfo(user)
                 .build();
         return refreshTokenRepo.save(refreshToken);

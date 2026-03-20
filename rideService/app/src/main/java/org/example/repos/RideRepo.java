@@ -36,5 +36,9 @@ public interface RideRepo extends JpaRepository<Ride, String> {
     @org.springframework.data.jpa.repository.Query("UPDATE Ride r SET r.seatsAvailable = r.seatsAvailable - 1 WHERE r.rideId = :rideId AND r.seatsAvailable > 0")
     int decrementSeatsAvailable(@org.springframework.data.repository.query.Param("rideId") String rideId);
 
+    Page<Ride> findByCreaterId(String createrId, Pageable pageable);
+
+    @Query("SELECT r FROM Ride r JOIN r.bookings b WHERE b.userId = :userId")
+    Page<Ride> findRidesByPassengerId(@Param("userId") String userId, Pageable pageable);
 
 }

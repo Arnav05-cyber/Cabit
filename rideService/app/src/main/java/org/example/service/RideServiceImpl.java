@@ -100,6 +100,7 @@ public class RideServiceImpl implements RideService {
 
         return new RideResponse(
                 savedRide.getRideId(),
+                savedRide.getCreaterId(),
                 savedRide.getToLocation(),
                 savedRide.getFromLocation(),
                 savedRide.getDepartureTime(),
@@ -155,7 +156,7 @@ public class RideServiceImpl implements RideService {
         }
 
         return new RideResponse(
-                ride.getRideId(), ride.getToLocation(), ride.getFromLocation(),
+                ride.getRideId(), ride.getCreaterId(), ride.getToLocation(), ride.getFromLocation(),
                 ride.getDepartureTime(), ride.getSeatsAvailable(), ride.getFare(),
                 ride.getRideStatus(), farePerPerson
         );
@@ -183,7 +184,7 @@ public class RideServiceImpl implements RideService {
         ));
 
         return new RideResponse(
-                ride.getRideId(), ride.getToLocation(), ride.getFromLocation(),
+                ride.getRideId(), ride.getCreaterId(), ride.getToLocation(), ride.getFromLocation(),
                 ride.getDepartureTime(), ride.getSeatsAvailable(), ride.getFare(),
                 ride.getRideStatus(), calculateFarePerPerson(ride)
         );
@@ -195,7 +196,7 @@ public class RideServiceImpl implements RideService {
         log.info("Fetching ride details for rideId: {}", rideId);
         Ride ride = rideRepo.findById(rideId).orElseThrow(() -> new RideNotFoundException("Ride not found"));
         return new RideResponse(
-                ride.getRideId(), ride.getToLocation(), ride.getFromLocation(),
+                ride.getRideId(), ride.getCreaterId(), ride.getToLocation(), ride.getFromLocation(),
                 ride.getDepartureTime(), ride.getSeatsAvailable(), ride.getFare(),
                 ride.getRideStatus(), calculateFarePerPerson(ride)
         );
@@ -227,6 +228,7 @@ public class RideServiceImpl implements RideService {
                 if (isNearRoute) {
                     matches.add(new RideResponse(
                             ride.getRideId(),
+                            ride.getCreaterId(),
                             ride.getToLocation(),
                             ride.getFromLocation(),
                             ride.getDepartureTime(),
@@ -260,9 +262,19 @@ public class RideServiceImpl implements RideService {
         return rides.map(this::mapToResponse);
     }
 
+    @Override
+    public Page<RideResponse> getMyOfferedRides(String userId, Pageable pageable) {
+        return rideRepo.findByCreaterId(userId, pageable).map(this::mapToResponse);
+    }
+
+    @Override
+    public Page<RideResponse> getMyJoinedRides(String userId, Pageable pageable) {
+        return rideRepo.findRidesByPassengerId(userId, pageable).map(this::mapToResponse);
+    }
+
     private RideResponse mapToResponse(Ride ride) {
         return new RideResponse(
-                ride.getRideId(), ride.getToLocation(), ride.getFromLocation(),
+                ride.getRideId(), ride.getCreaterId(), ride.getToLocation(), ride.getFromLocation(),
                 ride.getDepartureTime(), ride.getSeatsAvailable(), ride.getFare(),
                 ride.getRideStatus(), calculateFarePerPerson(ride)
         );

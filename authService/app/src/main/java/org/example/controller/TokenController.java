@@ -48,10 +48,19 @@ public class TokenController {
             RefreshToken refreshToken =
                     refreshTokenService.createRefreshToken(authRequestDTO.getUserName());
 
+            // Get user info to return email
+            String userName = authRequestDTO.getUserName();
+            UserInfo userInfo = authentication.getPrincipal() instanceof org.example.service.CustomUserDetails
+                    ? (UserInfo) authentication.getPrincipal()
+                    : null;
+            String email = userInfo != null ? userInfo.getEmail() : null;
+
             return new ResponseEntity<>(
                     JwtResponseDTO.builder()
-                            .accessToken(jwtService.GenerateToken(authRequestDTO.getUserName()))
+                            .accessToken(jwtService.GenerateToken(userName))
                             .token(refreshToken.getToken())
+                            .userName(userName)
+                            .email(email)
                             .build(),
                     HttpStatus.OK
             );
@@ -77,6 +86,8 @@ public class TokenController {
                     return JwtResponseDTO.builder()
                             .accessToken(accessToken)
                             .token(refreshTokenRequestDTO.getRefreshToken())
+                            .userName(userInfo.getUserName())
+                            .email(userInfo.getEmail())
                             .build();
                 })
                 .orElseThrow(() ->

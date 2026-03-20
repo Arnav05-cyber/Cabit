@@ -27,4 +27,8 @@ public interface RideService {
     Page<RideResponse> getRides(String toLocation, Boolean availableSeats, LocalDateTime before, LocalDateTime after ,Pageable pageable);
 
     List<RideResponse> matchRides(String fromLocation, String toLocation);
+
+    Page<RideResponse> getMyOfferedRides(String userId, Pageable pageable);
+
+    Page<RideResponse> getMyJoinedRides(String userId, Pageable pageable);
 }

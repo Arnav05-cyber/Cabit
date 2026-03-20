@@ -46,7 +46,7 @@ public class AuthController {
             System.out.println("User signed up successfully: " + userInfoDto.getUserName());
             RefreshToken refreshToken = refreshTokenService.createRefreshToken(userInfoDto.getUserName());
             String jwtToken = jwtService.GenerateToken(userInfoDto.getUserName());
-            return new ResponseEntity<>(JwtResponseDTO.builder().accessToken(jwtToken).token(refreshToken.getToken()).build(), HttpStatus.OK);
+            return new ResponseEntity<>(JwtResponseDTO.builder().accessToken(jwtToken).token(refreshToken.getToken()).userName(userInfoDto.getUserName()).email(userInfoDto.getEmail()).build(), HttpStatus.OK);
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Internal server error: " + e.getMessage());
         }

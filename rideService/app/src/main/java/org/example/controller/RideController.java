@@ -60,6 +60,17 @@ public class RideController {
     }
 
 
+    @GetMapping("/my/offered")
+    public Page<RideResponse> getMyOfferedRides(Authentication authentication, Pageable pageable) {
+        String username = authentication.getName();
+        return rideService.getMyOfferedRides(username, pageable);
+    }
+
+    @GetMapping("/my/joined")
+    public Page<RideResponse> getMyJoinedRides(Authentication authentication, Pageable pageable) {
+        String username = authentication.getName();
+        return rideService.getMyJoinedRides(username, pageable);
+    }
 
     @GetMapping
     public Page<RideResponse> getRides(
