@@ -27,9 +27,17 @@ public class NotificationListener {
                 rideCreatedEvent.getDepartureTime());
 
         simpMessagingTemplate.convertAndSend("/topic/ride-updates", "New ride created from " + rideCreatedEvent.getFromLocation() + " to " + rideCreatedEvent.getToLocation());
+
+        if (rideCreatedEvent.getNearbyUserIds() != null && !rideCreatedEvent.getNearbyUserIds().isEmpty()) {
+            rideCreatedEvent.getNearbyUserIds().forEach(userId -> {
+                if (!userId.equals(rideCreatedEvent.getCreatorId())) {
+                    log.info("🔔 [NEARBY MATCH] Notifying user {} about a new ride near their popular places!", userId);
+                    simpMessagingTemplate.convertAndSendToUser(userId, "/queue/notifications",
+                            "A new ride has been created near your popular locations: from " + rideCreatedEvent.getFromLocation() + " to " + rideCreatedEvent.getToLocation());
+                }
+            });
+        }
     }
-
-
     @KafkaHandler
     public void handleRideJoined(RideJoinedEvent rideJoinedEvent) {
         log.info("🔔 [NEW RIDE] User {} joined a ride {} at {} and booked {} seats",
