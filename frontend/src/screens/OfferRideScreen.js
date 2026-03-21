@@ -11,7 +11,7 @@ import {
   Platform,
   StyleSheet,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { rideApi } from '../api/apiClient';
 
 export default function OfferRideScreen({ navigation }) {
@@ -20,12 +20,12 @@ export default function OfferRideScreen({ navigation }) {
   const [departureTime, setDepartureTime] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [totalSeats, setTotalSeats] = useState('');
-  const [totalFare, setTotalFare] = useState('');
+
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
-    if (!fromLocation.trim() || !toLocation.trim() || !totalSeats || !totalFare) {
+    if (!fromLocation.trim() || !toLocation.trim() || !totalSeats) {
       Alert.alert('Missing Fields', 'Please fill in all required fields.');
       return;
     }
@@ -33,10 +33,7 @@ export default function OfferRideScreen({ navigation }) {
       Alert.alert('Invalid Input', 'Seats must be between 1 and 7.');
       return;
     }
-    if (isNaN(parseFloat(totalFare)) || parseFloat(totalFare) < 0) {
-      Alert.alert('Invalid Input', 'Please enter a valid fare amount.');
-      return;
-    }
+
     setLoading(true);
     try {
       await rideApi.post('/rides', {
@@ -44,15 +41,20 @@ export default function OfferRideScreen({ navigation }) {
         toLocation: toLocation.trim(),
         departureTime: departureTime.toISOString(),
         totalSeats: parseInt(totalSeats),
-        totalFare: parseFloat(totalFare),
+
         notes: notes.trim(),
       });
       Alert.alert('🎉 Ride Created!', 'Your ride has been posted successfully.', [
         { text: 'OK', onPress: () => navigation.navigate('FindRides') },
       ]);
     } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to create ride. Please try again.';
-      Alert.alert('Error', msg);
+      console.error('=== RIDE CREATE ERROR ===');
+      console.error('Status:', err.response?.status);
+      console.error('Data:', JSON.stringify(err.response?.data));
+      console.error('Message:', err.message);
+      console.error('Is network error:', !err.response);
+      const msg = err.response?.data?.message || err.message || 'Failed to create ride. Please try again.';
+      Alert.alert('Error', `[${err.response?.status || 'NETWORK'}] ${msg}`);
     } finally {
       setLoading(false);
     }
@@ -60,27 +62,25 @@ export default function OfferRideScreen({ navigation }) {
 
   const handleOpenPicker = () => {
     if (Platform.OS === 'android') {
-      import('@react-native-community/datetimepicker').then(({ DateTimePickerAndroid }) => {
-        DateTimePickerAndroid.open({
-          value: departureTime,
-          mode: 'date',
-          minimumDate: new Date(),
-          onChange: (event, selectedDate) => {
-            if (event.type === 'set' && selectedDate) {
-              setDepartureTime(selectedDate);
-              // Open time picker right after date is selected
-              DateTimePickerAndroid.open({
-                value: selectedDate,
-                mode: 'time',
-                onChange: (tEvent, tDate) => {
-                  if (tEvent.type === 'set' && tDate) {
-                    setDepartureTime(tDate);
-                  }
-                },
-              });
-            }
-          },
-        });
+      DateTimePickerAndroid.open({
+        value: departureTime,
+        mode: 'date',
+        minimumDate: new Date(),
+        onChange: (event, selectedDate) => {
+          if (event.type === 'set' && selectedDate) {
+            setDepartureTime(selectedDate);
+            // Open time picker right after date is selected
+            DateTimePickerAndroid.open({
+              value: selectedDate,
+              mode: 'time',
+              onChange: (tEvent, tDate) => {
+                if (tEvent.type === 'set' && tDate) {
+                  setDepartureTime(tDate);
+                }
+              },
+            });
+          }
+        },
       });
     } else {
       setShowDatePicker(true);
@@ -169,17 +169,7 @@ export default function OfferRideScreen({ navigation }) {
                 maxLength={1}
               />
             </View>
-            <View style={{ flex: 1, marginLeft: 8 }}>
-              <Text style={labelStyle}>FARE PER PERSON (₹) *</Text>
-              <TextInput
-                style={[inputStyle, { textAlign: 'center' }]}
-                placeholder="e.g. 150"
-                placeholderTextColor="#B0BEC5"
-                keyboardType="decimal-pad"
-                value={totalFare}
-                onChangeText={setTotalFare}
-              />
-            </View>
+
           </View>
 
           {/* Notes */}

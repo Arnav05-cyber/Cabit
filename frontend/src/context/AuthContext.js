@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }) => {
     return response.data;
   };
 
-  const register = async (name, email, password) => {
+  const register = async (name, email, password, phoneNumber, place1, place2) => {
     const nameParts = name.trim().split(' ');
     const firstName = nameParts[0];
     const lastName = nameParts.slice(1).join(' ') || firstName;
@@ -50,6 +50,9 @@ export const AuthProvider = ({ children }) => {
       lastName,
       email,
       password,
+      phoneNumber,
+      place1,
+      place2
     });
     const { accessToken: jwt, token: refreshToken, userName, email: userEmail } = response.data;
     const userData = { name: userName || name, email: userEmail || email };

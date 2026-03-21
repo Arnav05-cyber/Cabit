@@ -65,10 +65,7 @@ export default function RideCard({ ride, isSelected, onPress, onMapPress }) {
           <Text style={styles.infoIcon}>💺</Text>
           <Text style={styles.infoText}>{seats} left</Text>
         </View>
-        <View style={styles.infoPill}>
-          <Text style={styles.infoIcon}>💰</Text>
-          <Text style={styles.infoText}>₹{ride.totalFare || ride.fare || '—'}</Text>
-        </View>
+
       </View>
 
       {/* Footer */}

@@ -18,10 +18,13 @@ export default function RegisterScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [place1, setPlace1] = useState('');
+  const [place2, setPlace2] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
-    if (!name.trim() || !email.trim() || !password.trim()) {
+    if (!name.trim() || !email.trim() || !password.trim() || !phoneNumber.trim() || !place1.trim() || !place2.trim()) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
@@ -31,7 +34,7 @@ export default function RegisterScreen({ navigation }) {
     }
     setLoading(true);
     try {
-      await register(name.trim(), email.trim(), password);
+      await register(name.trim(), email.trim(), password, phoneNumber.trim(), place1.trim(), place2.trim());
     } catch (err) {
       const msg = err.response?.data?.message || 'Registration failed. Please try again.';
       Alert.alert('Registration Failed', msg);
@@ -104,6 +107,34 @@ export default function RegisterScreen({ navigation }) {
             autoCapitalize="none"
             value={email}
             onChangeText={setEmail}
+          />
+
+          <Text style={labelStyle}>PHONE NUMBER</Text>
+          <TextInput
+            style={inputStyle}
+            placeholder="Your phone number"
+            placeholderTextColor="#B0BEC5"
+            keyboardType="phone-pad"
+            value={phoneNumber}
+            onChangeText={setPhoneNumber}
+          />
+
+          <Text style={labelStyle}>MOST VISITED PLACE 1</Text>
+          <TextInput
+            style={inputStyle}
+            placeholder="e.g. Home, Hostel"
+            placeholderTextColor="#B0BEC5"
+            value={place1}
+            onChangeText={setPlace1}
+          />
+
+          <Text style={labelStyle}>MOST VISITED PLACE 2</Text>
+          <TextInput
+            style={inputStyle}
+            placeholder="e.g. Campus, Work"
+            placeholderTextColor="#B0BEC5"
+            value={place2}
+            onChangeText={setPlace2}
           />
 
           <Text style={labelStyle}>PASSWORD</Text>

@@ -13,14 +13,16 @@ import MapView, { Marker, Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
 import polyline from '@mapbox/polyline';
 import { rideApi } from '../api/apiClient';
 import { useWebSocket } from '../context/WebSocketContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function RideDetailScreen({ route, navigation }) {
+  const { user } = useAuth();
   const { rideId, ride: initialRide } = route.params || {};
   const [ride, setRide] = useState(initialRide || null);
   const [loading, setLoading] = useState(!initialRide);
-  const [joining, setJoining] = useState(false);
-  const [leaving, setLeaving] = useState(false);
   const [decodedPath, setDecodedPath] = useState([]);
+  const [closing, setClosing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const { subscribe, unsubscribe, connected } = useWebSocket();
 
   // Fetch ride details if not passed from navigation
@@ -54,17 +56,7 @@ export default function RideDetailScreen({ route, navigation }) {
     const topic = `/topic/ride/${rideId}`;
     subscribe(topic, (event) => {
       console.log('WS event:', event);
-      if (event.type === 'RideJoinedEvent' || event.type === 'JOIN') {
-        setRide((prev) => ({
-          ...prev,
-          availableSeats: Math.max(0, (prev.availableSeats ?? prev.totalSeats ?? 0) - 1),
-        }));
-      } else if (event.type === 'RideLeftEvent' || event.type === 'LEAVE') {
-        setRide((prev) => ({
-          ...prev,
-          availableSeats: (prev.availableSeats ?? 0) + 1,
-        }));
-      } else if (event.availableSeats !== undefined) {
+      if (event.availableSeats !== undefined) {
         setRide((prev) => ({ ...prev, availableSeats: event.availableSeats }));
       }
     });
@@ -72,34 +64,40 @@ export default function RideDetailScreen({ route, navigation }) {
     return () => unsubscribe(topic);
   }, [rideId, connected]);
 
-  const handleJoinRide = async () => {
-    setJoining(true);
-    try {
-      await rideApi.post(`/rides/${rideId}/join`);
-      Alert.alert('🎉 Joined!', "You've successfully joined this ride. Have a safe trip!", [
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ]);
-    } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to join ride. It may be full.';
-      Alert.alert('Error', msg);
-    } finally {
-      setJoining(false);
-    }
+  const handleCloseRide = async () => {
+    Alert.alert('Close Ride', 'Are you sure you want to close this ride? No more passengers will be able to join.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Close', style: 'destructive', onPress: async () => {
+        setClosing(true);
+        try {
+          await rideApi.put(`/rides/${rideId}/close`);
+          setRide((prev) => ({ ...prev, status: 'CLOSED', rideStatus: 'CLOSED' }));
+          Alert.alert('Closed', 'The ride has been closed.');
+        } catch (err) {
+          Alert.alert('Error', 'Failed to close ride.');
+        } finally {
+          setClosing(false);
+        }
+      }}
+    ]);
   };
 
-  const handleLeaveRide = async () => {
-    setLeaving(true);
-    try {
-      await rideApi.post(`/rides/${rideId}/leave`);
-      Alert.alert('✅ Left Ride', "You've successfully left this ride.", [
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ]);
-    } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to leave ride.';
-      Alert.alert('Error', msg);
-    } finally {
-      setLeaving(false);
-    }
+  const handleDeleteRide = async () => {
+    Alert.alert('Delete Ride', 'Are you sure you want to delete this ride? This action cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: async () => {
+        setDeleting(true);
+        try {
+          await rideApi.delete(`/rides/${rideId}`);
+          Alert.alert('Deleted', 'The ride has been deleted.', [
+            { text: 'OK', onPress: () => navigation.goBack() }
+          ]);
+        } catch (err) {
+          Alert.alert('Error', 'Failed to delete ride.');
+          setDeleting(false);
+        }
+      }}
+    ]);
   };
 
   if (loading) {
@@ -198,7 +196,6 @@ export default function RideDetailScreen({ route, navigation }) {
         {/* Stats Grid */}
         <View style={styles.statsGrid}>
           <StatBox icon="🕐" label="Departure" value={formatDateTime(ride.departureTime)} />
-          <StatBox icon="💰" label="Fare" value={`₹${ride.totalFare || ride.fare || '—'}`} />
           <StatBox
             icon="💺"
             label="Seats"
@@ -206,7 +203,7 @@ export default function RideDetailScreen({ route, navigation }) {
             highlight={isFull ? '#FFEBEE' : '#E8F5E9'}
             textColor={isFull ? '#C62828' : '#2E7D32'}
           />
-          <StatBox icon="📊" label="Status" value={ride.status || (isFull ? 'FULL' : 'OPEN')} />
+          <StatBox icon="📊" label="Status" value={ride.status === 'CLOSED' || ride.rideStatus === 'CLOSED' ? 'CLOSED' : (isFull ? 'FULL' : 'OPEN')} />
         </View>
 
         {/* Real-time indicator */}
@@ -218,15 +215,23 @@ export default function RideDetailScreen({ route, navigation }) {
         </View>
 
         {/* Driver */}
-        {ride.driverName && (
+        {ride.creatorName && (
           <View style={styles.driverCard}>
             <View style={styles.driverAvatar}>
-              <Text style={styles.driverAvatarText}>{ride.driverName[0]?.toUpperCase()}</Text>
+              <Text style={styles.driverAvatarText}>{ride.creatorName[0]?.toUpperCase()}</Text>
             </View>
-            <View>
-              <Text style={styles.driverLabel}>Driver</Text>
-              <Text style={styles.driverNameText}>{ride.driverName}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.driverLabel}>Creator</Text>
+              <Text style={styles.driverNameText}>{ride.creatorName}</Text>
             </View>
+            {ride.creatorPhone && (
+              <TouchableOpacity
+                style={styles.callButton}
+                onPress={() => Alert.alert('Contact Creator', `Phone: ${ride.creatorPhone}`)}
+              >
+                <Text style={styles.callButtonText}>📞 Call</Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
@@ -238,34 +243,36 @@ export default function RideDetailScreen({ route, navigation }) {
           </View>
         )}
 
-        {/* Join/Leave Buttons */}
-        <View style={{ flexDirection: 'row', gap: 10 }}>
-          <TouchableOpacity
-            style={[styles.joinButton, isFull && styles.joinButtonDisabled, { flex: 1 }]}
-            onPress={handleJoinRide}
-            disabled={joining || isFull}
-          >
-            {joining ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.joinButtonText}>
-                {isFull ? '😔 Ride Full' : '🚗 Join'}
-              </Text>
+        {/* Creator Actions */}
+        {user?.name === ride.createrId && (
+          <View style={styles.actionRow}>
+            {(ride.status !== 'CLOSED' && ride.rideStatus !== 'CLOSED') && (
+              <TouchableOpacity
+                style={[styles.actionButton, { backgroundColor: '#F57C00' }]}
+                onPress={handleCloseRide}
+                disabled={closing}
+              >
+                {closing ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.actionButtonText}>🔒 Close Ride</Text>
+                )}
+              </TouchableOpacity>
             )}
-          </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.joinButton, { backgroundColor: '#E53935', flex: 1 }]}
-            onPress={handleLeaveRide}
-            disabled={leaving}
-          >
-            {leaving ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.joinButtonText}>❌ Leave</Text>
-            )}
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: '#D32F2F' }]}
+              onPress={handleDeleteRide}
+              disabled={deleting}
+            >
+              {deleting ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.actionButtonText}>🗑️ Delete</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -297,6 +304,24 @@ const styles = StyleSheet.create({
   markerBox: {
     borderRadius: 10, padding: 4,
     borderWidth: 2, borderColor: '#fff',
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 20,
+  },
+  actionButton: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+  },
+  actionButtonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
   },
   sheet: {
     flex: 1,
@@ -366,16 +391,15 @@ const styles = StyleSheet.create({
   notesBlock: { backgroundColor: '#FFF8E1', borderRadius: 12, padding: 14, marginBottom: 16 },
   notesLabel: { fontSize: 13, fontWeight: '700', color: '#F57F17', marginBottom: 6 },
   notesText: { fontSize: 14, color: '#5D4037', lineHeight: 20 },
-  joinButton: {
-    backgroundColor: '#1565C0',
-    borderRadius: 16,
-    padding: 18,
-    alignItems: 'center',
-    shadowColor: '#1565C0',
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 8,
+  callButton: {
+    backgroundColor: '#E8F5E9',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
   },
-  joinButtonDisabled: { backgroundColor: '#B0BEC5', shadowOpacity: 0 },
-  joinButtonText: { color: '#fff', fontSize: 17, fontWeight: '800' },
+  callButtonText: {
+    color: '#2E7D32',
+    fontWeight: '700',
+    fontSize: 14,
+  },
 });

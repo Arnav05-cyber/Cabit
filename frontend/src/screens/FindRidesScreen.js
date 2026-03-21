@@ -28,11 +28,13 @@ export default function FindRidesScreen({ navigation }) {
   const [selectedRide, setSelectedRide] = useState(null);
   const [decodedPath, setDecodedPath] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState('all'); // 'all' | 'nearby'
   const mapRef = useRef(null);
 
   const fetchRides = useCallback(async () => {
     try {
-      const response = await rideApi.get('/rides');
+      const endpoint = activeTab === 'nearby' ? '/rides/nearby' : '/rides';
+      const response = await rideApi.get(endpoint);
       const data = Array.isArray(response.data) ? response.data : response.data.content || [];
       // Filter out rides created by the current user
       const othersRides = data.filter(r => r.createrId !== user?.name);
@@ -45,7 +47,7 @@ export default function FindRidesScreen({ navigation }) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [activeTab, user]);
 
   useEffect(() => {
     fetchRides();
@@ -159,7 +161,7 @@ export default function FindRidesScreen({ navigation }) {
               >
                 <View style={[styles.customMarker, isSelected && styles.selectedMarker]}>
                   <Text style={styles.markerEmoji}>🚗</Text>
-                  <Text style={styles.markerFare}>₹{ride.totalFare || ride.fare || '?'}</Text>
+
                 </View>
               </Marker>
             );
@@ -198,6 +200,26 @@ export default function FindRidesScreen({ navigation }) {
 
       {/* List Section */}
       <View style={styles.listSection}>
+        {/* Tabs */}
+        <View style={styles.tabRow}>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'all' && styles.activeTab]}
+            onPress={() => setActiveTab('all')}
+          >
+            <Text style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}>
+              All Rides
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'nearby' && styles.activeTab]}
+            onPress={() => setActiveTab('nearby')}
+          >
+            <Text style={[styles.tabText, activeTab === 'nearby' && styles.activeTabText]}>
+              Near My Places
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Search Bar */}
         <View style={styles.searchContainer}>
           <Text style={styles.searchIcon}>🔍</Text>
@@ -302,7 +324,7 @@ const styles = StyleSheet.create({
     transform: [{ scale: 1.15 }],
   },
   markerEmoji: { fontSize: 14 },
-  markerFare: { color: '#fff', fontSize: 10, fontWeight: '700' },
+
   listSection: {
     flex: 1,
     backgroundColor: '#F5F7FF',
@@ -311,6 +333,23 @@ const styles = StyleSheet.create({
     marginTop: -16,
     paddingTop: 12,
   },
+  tabRow: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginBottom: 10,
+    backgroundColor: '#E8EEF9',
+    borderRadius: 12,
+    padding: 4,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+    borderRadius: 10,
+  },
+  activeTab: { backgroundColor: '#fff', shadowColor: '#1A237E', shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
+  tabText: { fontSize: 13, color: '#78909C', fontWeight: '600' },
+  activeTabText: { color: '#1A237E', fontWeight: '800' },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',

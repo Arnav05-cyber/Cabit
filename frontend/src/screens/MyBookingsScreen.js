@@ -20,29 +20,19 @@ export default function MyBookingsScreen({ navigation }) {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState('joined'); // 'joined' | 'offered'
 
   const fetchBookings = useCallback(async () => {
     try {
-      const [joinedRes, offeredRes] = await Promise.allSettled([
-        rideApi.get('/rides/my/joined'),
-        rideApi.get('/rides/my/offered'),
-      ]);
-
-      const joined = joinedRes.status === 'fulfilled'
-        ? (Array.isArray(joinedRes.value.data) ? joinedRes.value.data : joinedRes.value.data?.content || [])
-        : [];
-      const offered = offeredRes.status === 'fulfilled'
-        ? (Array.isArray(offeredRes.value.data) ? offeredRes.value.data : offeredRes.value.data?.content || [])
-        : [];
-
-      setBookings({ joined, offered });
+      const offeredRes = await rideApi.get('/rides/my/offered');
+      const offered = Array.isArray(offeredRes.data) ? offeredRes.data : offeredRes.data?.content || [];
+      setBookings(offered);
     } catch (err) {
-      // Fall back to main rides endpoint if specific endpoints don't exist
       try {
         const response = await rideApi.get('/rides');
         const all = Array.isArray(response.data) ? response.data : response.data?.content || [];
-        setBookings({ joined: all, offered: [] });
+        // Filter those created by user as fallback
+        const myOffered = all.filter(r => r.createrId === user?.name || r.creatorName === user?.name);
+        setBookings(myOffered);
       } catch {
         Alert.alert('Error', 'Failed to load your bookings');
       }
@@ -50,7 +40,7 @@ export default function MyBookingsScreen({ navigation }) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [user]);
 
   useFocusEffect(
     useCallback(() => {
@@ -69,7 +59,6 @@ export default function MyBookingsScreen({ navigation }) {
     );
   };
 
-  const currentList = bookings[activeTab] || [];
 
   if (loading) {
     return (
@@ -101,61 +90,27 @@ export default function MyBookingsScreen({ navigation }) {
       {/* Stats Row */}
       <View style={styles.statsRow}>
         <View style={styles.statPill}>
-          <Text style={styles.statPillNum}>{bookings.joined?.length || 0}</Text>
-          <Text style={styles.statPillLabel}>Rides Joined</Text>
-        </View>
-        <View style={styles.statPill}>
-          <Text style={styles.statPillNum}>{bookings.offered?.length || 0}</Text>
+          <Text style={styles.statPillNum}>{bookings.length || 0}</Text>
           <Text style={styles.statPillLabel}>Rides Offered</Text>
         </View>
       </View>
 
-      {/* Tabs */}
-      <View style={styles.tabRow}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'joined' && styles.activeTab]}
-          onPress={() => setActiveTab('joined')}
-        >
-          <Text style={[styles.tabText, activeTab === 'joined' && styles.activeTabText]}>
-            🎒 Joined
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'offered' && styles.activeTab]}
-          onPress={() => setActiveTab('offered')}
-        >
-          <Text style={[styles.tabText, activeTab === 'offered' && styles.activeTabText]}>
-            🚗 Offered
-          </Text>
-        </TouchableOpacity>
-      </View>
-
       {/* Rides List */}
-      {currentList.length === 0 ? (
+      {bookings.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={{ fontSize: 52 }}>
-            {activeTab === 'joined' ? '🎒' : '🚗'}
-          </Text>
-          <Text style={styles.emptyTitle}>
-            {activeTab === 'joined' ? 'No rides joined yet' : 'You haven\'t offered any rides'}
-          </Text>
-          <Text style={styles.emptySubtitle}>
-            {activeTab === 'joined'
-              ? 'Find a ride and join it to see it here'
-              : 'Offer a ride to help fellow students and earn'}
-          </Text>
+          <Text style={{ fontSize: 52 }}>🚗</Text>
+          <Text style={styles.emptyTitle}>You haven't offered any rides</Text>
+          <Text style={styles.emptySubtitle}>Offer a ride to help fellow students and earn</Text>
           <TouchableOpacity
             style={styles.emptyButton}
-            onPress={() => navigation.navigate(activeTab === 'joined' ? 'FindRides' : 'OfferRide')}
+            onPress={() => navigation.navigate('OfferRide')}
           >
-            <Text style={styles.emptyButtonText}>
-              {activeTab === 'joined' ? 'Find Rides →' : 'Offer a Ride →'}
-            </Text>
+            <Text style={styles.emptyButtonText}>Offer a Ride →</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <FlatList
-          data={currentList}
+          data={bookings}
           keyExtractor={(item) => String(item.id)}
           renderItem={({ item }) => (
             <RideCard
