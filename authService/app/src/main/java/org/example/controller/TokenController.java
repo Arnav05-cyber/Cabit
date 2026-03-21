@@ -48,19 +48,29 @@ public class TokenController {
             RefreshToken refreshToken =
                     refreshTokenService.createRefreshToken(authRequestDTO.getUserName());
 
-            // Get user info to return email
+            // Get user info to return email and userId
             String userName = authRequestDTO.getUserName();
             UserInfo userInfo = authentication.getPrincipal() instanceof org.example.service.CustomUserDetails
                     ? (UserInfo) authentication.getPrincipal()
                     : null;
             String email = userInfo != null ? userInfo.getEmail() : null;
+            String userId = userInfo != null ? userInfo.getUserId() : null;
+
+            java.util.Map<String, Object> extraClaims = new java.util.HashMap<>();
+            if (userId != null) {
+                extraClaims.put("userId", userId);
+            }
+            String jwtToken = userInfo != null 
+                    ? jwtService.generateToken((org.springframework.security.core.userdetails.UserDetails) userInfo, extraClaims)
+                    : jwtService.GenerateToken(userName);
 
             return new ResponseEntity<>(
                     JwtResponseDTO.builder()
-                            .accessToken(jwtService.GenerateToken(userName))
+                            .accessToken(jwtToken)
                             .token(refreshToken.getToken())
                             .userName(userName)
                             .email(email)
+                            .userId(userId)
                             .build(),
                     HttpStatus.OK
             );
@@ -80,14 +90,17 @@ public class TokenController {
                 .map(refreshTokenService::verifyExpiration)
                 .map(RefreshToken::getUserInfo)
                 .map(userInfo -> {
-                    String accessToken =
-                            jwtService.GenerateToken(userInfo.getUserName());
+                    java.util.Map<String, Object> extraClaims = new java.util.HashMap<>();
+                    extraClaims.put("userId", userInfo.getUserId());
+                    String accessToken = jwtService.generateToken(
+                            new org.example.service.CustomUserDetails(userInfo), extraClaims);
 
                     return JwtResponseDTO.builder()
                             .accessToken(accessToken)
                             .token(refreshTokenRequestDTO.getRefreshToken())
                             .userName(userInfo.getUserName())
                             .email(userInfo.getEmail())
+                            .userId(userInfo.getUserId())
                             .build();
                 })
                 .orElseThrow(() ->

@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.example.enums.RideStatus;
 
-import java.math.BigDecimal;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -53,9 +53,6 @@ public class Ride {
     @Column(name = "departure_time")
     private LocalDateTime departureTime;
 
-    @Column(name = "totalFare")
-    private BigDecimal fare;
-
     @Column(name = "total_seats")
     private Integer totalSeats;
 
@@ -68,9 +65,5 @@ public class Ride {
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
-
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "ride", cascade = CascadeType.ALL)
-
-    private java.util.Set<RideBookings> bookings = new java.util.HashSet<>();
 
 }

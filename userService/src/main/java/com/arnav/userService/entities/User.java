@@ -28,4 +28,10 @@ public class User {
     private String phoneNumber;
     
     private String email;
+
+    @Column(name = "place1")
+    private String place1;
+
+    @Column(name = "place2")
+    private String place2;
 }

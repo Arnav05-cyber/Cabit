@@ -17,6 +17,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpStatus;
+import java.util.Map;
 
 @AllArgsConstructor
 @RestController
@@ -45,14 +46,25 @@ public class AuthController {
             }
             System.out.println("User signed up successfully: " + userInfoDto.getUserName());
             RefreshToken refreshToken = refreshTokenService.createRefreshToken(userInfoDto.getUserName());
-            String jwtToken = jwtService.GenerateToken(userInfoDto.getUserName());
-            return new ResponseEntity<>(JwtResponseDTO.builder().accessToken(jwtToken).token(refreshToken.getToken()).userName(userInfoDto.getUserName()).email(userInfoDto.getEmail()).build(), HttpStatus.OK);
+            // Embed userId claim in the token so downstream services can identify users by UUID
+            UserInfo savedUser = userRepo.findByUserName(userInfoDto.getUserName());
+            Map<String, Object> extraClaims = new java.util.HashMap<>();
+            extraClaims.put("userId", savedUser.getUserId());
+            String jwtToken = jwtService.generateToken(new org.example.service.CustomUserDetails(savedUser), extraClaims);
+            return new ResponseEntity<>(JwtResponseDTO.builder()
+                    .accessToken(jwtToken)
+                    .token(refreshToken.getToken())
+                    .userName(userInfoDto.getUserName())
+                    .email(userInfoDto.getEmail())
+                    .userId(savedUser.getUserId())
+                    .build(), HttpStatus.OK);
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Internal server error: " + e.getMessage());
         }
     }
 
-    // Add this new logout endpoint
+
+
     @PostMapping("/auth/v1/logout")
     public ResponseEntity<?> logout(@RequestHeader("Authorization") String authHeader) {
         try {

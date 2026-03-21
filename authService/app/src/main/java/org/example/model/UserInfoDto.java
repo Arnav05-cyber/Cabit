@@ -21,5 +21,7 @@ public class UserInfoDto{
     private String email;
     private String phoneNumber;
     private String password;
+    private String place1;
+    private String place2;
 
 }

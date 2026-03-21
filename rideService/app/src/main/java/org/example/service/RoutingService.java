@@ -21,26 +21,30 @@ public class RoutingService {
     }
 
     public String getRoutePolyline(LatLang start, LatLang end) {
+        try {
+            Map<String, Object> body = Map.of(
+                    "coordinates", List.of(
+                            List.of(start.getLongitude(), start.getLatitude()),
+                            List.of(end.getLongitude(), end.getLatitude())
+                    )
+            );
 
-        Map<String, Object> body = Map.of(
-                "coordinates", List.of(
-                        List.of(start.getLongitude(), start.getLatitude()),
-                        List.of(end.getLongitude(), end.getLatitude())
-                )
-        );
+            Map response = webClient.post()
+                    .uri("/v2/directions/driving-car/json")
+                    .header("Authorization", apiKey)
+                    .bodyValue(body)
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .block();
 
-        Map response = webClient.post()
-                .uri("/v2/directions/driving-car")
-                .header("Authorization", apiKey)
-                .bodyValue(body)
-                .retrieve()
-                .bodyToMono(Map.class)
-                .block();
+            List routes = (List) response.get("routes");
+            Map route = (Map) routes.get(0);
 
-        List routes = (List) response.get("routes");
-        Map route = (Map) routes.get(0);
-
-        return (String) route.get("geometry");
+            return (String) route.get("geometry");
+        } catch (Exception e) {
+            // Routing failed - return null so ride can still be created without a polyline
+            return null;
+        }
     }
 }
 

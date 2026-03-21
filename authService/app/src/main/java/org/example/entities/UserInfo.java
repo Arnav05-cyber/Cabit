@@ -26,6 +26,12 @@ public class UserInfo {
     @Column(name = "email")  // Added email field
     private String email;
 
+    @Column(name = "place1")
+    private String place1;
+
+    @Column(name = "place2")
+    private String place2;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",

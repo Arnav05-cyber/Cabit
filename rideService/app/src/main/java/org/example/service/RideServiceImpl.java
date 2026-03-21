@@ -2,25 +2,23 @@ package org.example.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.example.dto.request.LeaveRideRequest;
-import org.example.entities.RideBookings;
 import org.example.enums.RideStatus;
 import org.example.geo.LatLang;
 import org.example.kafka.events.RideCreatedEvent;
-import org.example.kafka.events.RideJoinedEvent;
-import org.example.kafka.events.RideLeftEvent;
 import org.example.kafka.producer.RideEventProducer;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.geo.Point;
 
+import java.util.Set;
 import org.springframework.transaction.annotation.Transactional;
 import org.example.dto.request.CreateRideRequest;
 import org.example.dto.request.JoinRideRequest;
 import org.example.dto.response.RideResponse;
 import org.example.entities.Ride;
 import org.example.exception.*;
-import org.example.repos.RideBookingsRepo;
 import org.example.repos.RideRepo;
 import org.springframework.stereotype.Service;
 
@@ -28,25 +26,25 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Service
 public class RideServiceImpl implements RideService {
 
     private final RideRepo rideRepo;
-    private final RideBookingsRepo rideBookingsRepo;
     private final GeocodingService geocodingService;
     private final RoutingService routingService;
     private final RouteMatchingService routeMatchingService;
     private final RideEventProducer rideEventProducer;
     private final RedisGeoService redisGeoService;
 
-    public RideServiceImpl(RideRepo rideRepo, RideBookingsRepo rideBookingsRepo, GeocodingService geocodingService,
+    public RideServiceImpl(RideRepo rideRepo, GeocodingService geocodingService,
                            RoutingService routingService, RouteMatchingService routeMatchingService,
                            RideEventProducer rideEventProducer, RedisGeoService redisGeoService) {
         this.rideRepo = rideRepo;
-        this.rideBookingsRepo = rideBookingsRepo;
         this.geocodingService = geocodingService;
         this.routingService = routingService;
         this.routeMatchingService = routeMatchingService;
@@ -54,12 +52,7 @@ public class RideServiceImpl implements RideService {
         this.redisGeoService = redisGeoService;
     }
 
-    private BigDecimal calculateFarePerPerson(Ride ride) {
-        if (ride.getTotalSeats() == null || ride.getTotalSeats() <= 0) {
-            return ride.getFare();
-        }
-        return ride.getFare().divide(BigDecimal.valueOf(ride.getTotalSeats()), RoundingMode.HALF_UP);
-    }
+
 
     @Override
     public RideResponse createRide(CreateRideRequest request, String userId) {
@@ -76,15 +69,22 @@ public class RideServiceImpl implements RideService {
         ride.setDepartureTime(request.getDepartureTime());
         ride.setTotalSeats(request.getTotalSeats());
         ride.setSeatsAvailable(request.getTotalSeats());
-        ride.setFare(request.getTotalFare());
         ride.setCreaterId(userId);
         ride.setRideStatus(RideStatus.OPEN);
         ride.setCreatedAt(LocalDateTime.now());
 
         Ride savedRide = rideRepo.save(ride);
 
-        // Geospatial Indexing: Add starting point to Redis
-        redisGeoService.addRideLocation(savedRide.getRideId(), start);
+        // Geospatial Indexing: Add BOTH pickup and dropoff points to Redis so users near either end can discover the ride
+        if (start != null) redisGeoService.addRideLocation(savedRide.getRideId() + "_from", start);
+        if (end != null) redisGeoService.addRideLocation(savedRide.getRideId() + "_to", end);
+
+        List<String> nearbyPickupUsers = redisGeoService.findUsersNear(start, 10.0);
+        List<String> nearbyDropoffUsers = redisGeoService.findUsersNear(end, 10.0);
+        Set<String> allNearbyUsers = new HashSet<>();
+        if(nearbyPickupUsers != null) allNearbyUsers.addAll(nearbyPickupUsers);
+        if(nearbyDropoffUsers != null) allNearbyUsers.addAll(nearbyDropoffUsers);
+        List<String> nearbyUserIds = new ArrayList<>(allNearbyUsers);
 
         RideCreatedEvent event = new RideCreatedEvent(
                 savedRide.getRideId(),
@@ -93,113 +93,47 @@ public class RideServiceImpl implements RideService {
                 savedRide.getToLocation(),
                 savedRide.getDepartureTime(),
                 savedRide.getTotalSeats(),
-                savedRide.getFare()
+                nearbyUserIds
         );
 
         rideEventProducer.publishRideCreatedEvent(event);
 
-        return new RideResponse(
-                savedRide.getRideId(),
-                savedRide.getCreaterId(),
-                savedRide.getToLocation(),
-                savedRide.getFromLocation(),
-                savedRide.getDepartureTime(),
-                savedRide.getSeatsAvailable(),
-                savedRide.getFare(),
-                savedRide.getRideStatus(),
-                calculateFarePerPerson(savedRide)
-        );
+        return mapToResponse(savedRide);
     }
 
     @Override
     @Transactional
-    @CachePut(value = "rides", key = "#request.rideId")
-    public RideResponse joinRide(JoinRideRequest request, String userId) {
-        Ride ride = rideRepo.findById(request.getRideId()).orElseThrow(() -> new RideNotFoundException("Ride not found"));
-
-        if (ride.getSeatsAvailable() <= 0) {
-            throw new NoSeatsAvailableException("No seats available");
+    public RideResponse closeRide(String rideId, String userId) {
+        Ride ride = rideRepo.findById(rideId).orElseThrow(() -> new RideNotFoundException("Ride not found"));
+        if (!ride.getCreaterId().equals(userId)) {
+            throw new InvalidRideActionException("You are not the creator of this ride.");
         }
-        if (rideBookingsRepo.findByRideAndUserId(ride, userId).isPresent()) {
-            throw new UserAlreadyJoinedException("User already joined this ride");
-        }
-        if (ride.getCreaterId().equals(userId)) {
-            throw new InvalidRideActionException("Ride creator cannot join their own ride");
-        }
-        if (!RideStatus.OPEN.equals(ride.getRideStatus())) {
-            throw new InvalidRideActionException("Ride is not open for joining");
-        }
-
-        int updatedRows = rideRepo.decrementSeatsAvailable(ride.getRideId());
-        if (updatedRows == 0) {
-            throw new NoSeatsAvailableException("No seats available");
-        }
-        ride.setSeatsAvailable(ride.getSeatsAvailable() - 1);
-
-        BigDecimal farePerPerson = calculateFarePerPerson(ride);
-
-        RideBookings booking = new RideBookings();
-        booking.setRide(ride);
-        booking.setUserId(userId);
-        booking.setJoinedAt(LocalDateTime.now());
-        booking.setFareShare(farePerPerson);
-        booking.setSeatsBooked(1);
-        rideBookingsRepo.save(booking);
-
-        rideEventProducer.publishRideJoinedEvent(new RideJoinedEvent(
-                ride.getRideId(), userId, 1, LocalDateTime.now()
-        ));
-
-        if (ride.getSeatsAvailable() == 0) {
-            ride.setRideStatus(RideStatus.FULL);
-            rideRepo.save(ride);
-        }
-
-        return new RideResponse(
-                ride.getRideId(), ride.getCreaterId(), ride.getToLocation(), ride.getFromLocation(),
-                ride.getDepartureTime(), ride.getSeatsAvailable(), ride.getFare(),
-                ride.getRideStatus(), farePerPerson
-        );
-    }
-
-    @Override
-    @Transactional
-    @CachePut(value = "rides", key = "#request.rideId")
-    public RideResponse leaveRide(LeaveRideRequest request, String userId) {
-        Ride ride = rideRepo.findById(request.getRideId()).orElseThrow(() -> new RideNotFoundException("Ride not found"));
-        RideBookings booking = rideBookingsRepo.findByRideAndUserId(ride, userId)
-                .orElseThrow(() -> new InvalidRideActionException("Booking not found"));
-
-        rideBookingsRepo.delete(booking);
-        ride.setSeatsAvailable(ride.getSeatsAvailable() + 1);
-
-        if (RideStatus.FULL.equals(ride.getRideStatus())) {
-            ride.setRideStatus(RideStatus.OPEN);
-        }
-
+        ride.setRideStatus(RideStatus.CLOSED);
         rideRepo.save(ride);
-
-        rideEventProducer.publishRideLeftEvent(new RideLeftEvent(
-                ride.getRideId(), userId, LocalDateTime.now()
-        ));
-
-        return new RideResponse(
-                ride.getRideId(), ride.getCreaterId(), ride.getToLocation(), ride.getFromLocation(),
-                ride.getDepartureTime(), ride.getSeatsAvailable(), ride.getFare(),
-                ride.getRideStatus(), calculateFarePerPerson(ride)
-        );
+        return mapToResponse(ride);
     }
 
     @Override
+    @Transactional
+    public void deleteRide(String rideId, String userId) {
+        Ride ride = rideRepo.findById(rideId).orElseThrow(() -> new RideNotFoundException("Ride not found"));
+        if (!ride.getCreaterId().equals(userId)) {
+            throw new InvalidRideActionException("You are not the creator of this ride.");
+        }
+        rideRepo.delete(ride);
+    }
+
+    @org.springframework.scheduling.annotation.Scheduled(cron = "0 0 * * * *") // Runs every hour
+    @Transactional
+    public void cleanupExpiredRides() {
+        log.info("Running scheduled cleanup for expired rides.");
+        rideRepo.deleteAllByDepartureTimeBefore(LocalDateTime.now());
+    }    @Override
     @Cacheable(value = "rides", key = "#rideId")
     public RideResponse getRide(String rideId) {
         log.info("Fetching ride details for rideId: {}", rideId);
         Ride ride = rideRepo.findById(rideId).orElseThrow(() -> new RideNotFoundException("Ride not found"));
-        return new RideResponse(
-                ride.getRideId(), ride.getCreaterId(), ride.getToLocation(), ride.getFromLocation(),
-                ride.getDepartureTime(), ride.getSeatsAvailable(), ride.getFare(),
-                ride.getRideStatus(), calculateFarePerPerson(ride)
-        );
+        return mapToResponse(ride);
     }
 
     @Override
@@ -226,21 +160,49 @@ public class RideServiceImpl implements RideService {
                 boolean isNearRoute = routeMatchingService.isDestinationNearRoute(ride.getRoutePolyline(), userEnd);
 
                 if (isNearRoute) {
-                    matches.add(new RideResponse(
-                            ride.getRideId(),
-                            ride.getCreaterId(),
-                            ride.getToLocation(),
-                            ride.getFromLocation(),
-                            ride.getDepartureTime(),
-                            ride.getSeatsAvailable(),
-                            ride.getFare(),
-                            ride.getRideStatus(),
-                            calculateFarePerPerson(ride)
-                    ));
+                    matches.add(mapToResponse(ride));
                 }
             }
         }
         return matches;
+    }
+
+    @Override
+    public List<RideResponse> getNearbyRides(String userId) {
+        List<Point> userPositions = redisGeoService.getUserPositions(userId);
+        if (userPositions.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        Set<String> uniqueRideIds = new HashSet<>();
+
+        for (Point pos : userPositions) {
+            LatLang loc = new LatLang();
+            loc.setLatitude(pos.getY());
+            loc.setLongitude(pos.getX());
+
+            List<String> nearbyRideKeys = redisGeoService.findRidesNear(loc, 10.0);
+            if (nearbyRideKeys != null) {
+                for (String key : nearbyRideKeys) {
+                    // Strip the _from / _to suffix to get the actual rideId
+                    String rideId = key.replaceAll("_(from|to)$", "");
+                    uniqueRideIds.add(rideId);
+                }
+            }
+        }
+
+        if (uniqueRideIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<Ride> nearbyRides = rideRepo.findAllById(uniqueRideIds);
+        List<RideResponse> responses = new ArrayList<>();
+        for (Ride ride : nearbyRides) {
+            if (RideStatus.OPEN.equals(ride.getRideStatus())) {
+                responses.add(mapToResponse(ride));
+            }
+        }
+        return responses;
     }
 
     @Override
@@ -267,16 +229,17 @@ public class RideServiceImpl implements RideService {
         return rideRepo.findByCreaterId(userId, pageable).map(this::mapToResponse);
     }
 
-    @Override
-    public Page<RideResponse> getMyJoinedRides(String userId, Pageable pageable) {
-        return rideRepo.findRidesByPassengerId(userId, pageable).map(this::mapToResponse);
-    }
+
 
     private RideResponse mapToResponse(Ride ride) {
+        String cName = redisGeoService.getUserName(ride.getCreaterId());
+        String cPhone = redisGeoService.getUserPhone(ride.getCreaterId());
+
         return new RideResponse(
-                ride.getRideId(), ride.getCreaterId(), ride.getToLocation(), ride.getFromLocation(),
-                ride.getDepartureTime(), ride.getSeatsAvailable(), ride.getFare(),
-                ride.getRideStatus(), calculateFarePerPerson(ride)
+                ride.getRideId(), ride.getCreaterId(), cName, cPhone,
+                ride.getToLocation(), ride.getFromLocation(),
+                ride.getDepartureTime(), ride.getSeatsAvailable(),
+                ride.getRideStatus()
         );
     }
 }

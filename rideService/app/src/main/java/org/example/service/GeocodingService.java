@@ -18,29 +18,32 @@ public class GeocodingService {
     }
 
     public LatLang geocode(String address) {
+        try {
+            List<Map<String, Object>> response = webClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/search")
+                            .queryParam("q", address)
+                            .queryParam("format", "json")
+                            .queryParam("limit", 1)
+                            .queryParam("countrycodes", "in")
+                            .queryParam("accept-language", "en")
+                            .build())
+                    .header("User-Agent", "cabit-app")
+                    .retrieve()
+                    .bodyToMono(List.class)
+                    .block();
 
-        List<Map<String, Object>> response = webClient.get()
-                .uri(uriBuilder -> uriBuilder
-                        .path("/search")
-                        .queryParam("q", address)
-                        .queryParam("format", "json")
-                        .queryParam("limit", 1)
-                        .build())
-                .header("User-Agent", "cabit-app")
-                .retrieve()
-                .bodyToMono(List.class)
-                .block();
+            if (response == null || response.isEmpty()) {
+                return null;
+            }
 
-        if (response == null || response.isEmpty()) {
-            throw new RuntimeException("Location not found: " + address);
+            Map location = response.get(0);
+            double lat = Double.parseDouble((String) location.get("lat"));
+            double lon = Double.parseDouble((String) location.get("lon"));
+            return new LatLang(lat, lon);
+        } catch (Exception e) {
+            return null;
         }
-
-        Map location = response.get(0);
-
-        double lat = Double.parseDouble((String) location.get("lat"));
-        double lon = Double.parseDouble((String) location.get("lon"));
-
-        return new LatLang(lat, lon);
     }
 
 }

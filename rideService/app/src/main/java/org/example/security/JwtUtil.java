@@ -14,11 +14,16 @@ public class JwtUtil {
 
     public String extactUserName(String token) {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
-        return Jwts.parserBuilder()
+        io.jsonwebtoken.Claims claims = Jwts.parserBuilder()
                 .setSigningKey(Keys.hmacShaKeyFor(keyBytes))
                 .build()
                 .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
+                .getBody();
+        // Prefer the userId claim (UUID) over the subject (display name)
+        Object userId = claims.get("userId");
+        if (userId != null) {
+            return userId.toString();
+        }
+        return claims.getSubject();
     }
 }

@@ -2,8 +2,6 @@ package org.example.controller;
 
 import lombok.AllArgsConstructor;
 import org.example.dto.request.CreateRideRequest;
-import org.example.dto.request.JoinRideRequest;
-import org.example.dto.request.LeaveRideRequest;
 import org.example.dto.response.RideResponse;
 
 
@@ -37,22 +35,17 @@ public class RideController {
         return ride;
     }
 
-    @PostMapping("/{rideId}/join")
-    public RideResponse joinRide(@PathVariable String rideId, Authentication authentication){
-        JoinRideRequest request = new JoinRideRequest(rideId);
+    @PutMapping("/{rideId}/close")
+    public RideResponse closeRide(@PathVariable String rideId, Authentication authentication) {
         String username = authentication.getName();
-        RideResponse ride = rideService.joinRide(request, username);
-        return ride;
+        return rideService.closeRide(rideId, username);
     }
 
-    @PostMapping("/{rideId}/leave")
-    public RideResponse leaveRide(@PathVariable String rideId, Authentication authentication){
-        LeaveRideRequest request = new LeaveRideRequest(rideId);
+    @DeleteMapping("/{rideId}")
+    public void deleteRide(@PathVariable String rideId, Authentication authentication) {
         String username = authentication.getName();
-        RideResponse ride = rideService.leaveRide(request, username);
-        return ride;
+        rideService.deleteRide(rideId, username);
     }
-
     @GetMapping("/{rideId}")
     public RideResponse getRide(@PathVariable String rideId){
         RideResponse ride = rideService.getRide(rideId);
@@ -66,11 +59,7 @@ public class RideController {
         return rideService.getMyOfferedRides(username, pageable);
     }
 
-    @GetMapping("/my/joined")
-    public Page<RideResponse> getMyJoinedRides(Authentication authentication, Pageable pageable) {
-        String username = authentication.getName();
-        return rideService.getMyJoinedRides(username, pageable);
-    }
+
 
     @GetMapping
     public Page<RideResponse> getRides(
@@ -89,6 +78,12 @@ public class RideController {
             @RequestParam String to
     ) {
         return rideService.matchRides(from, to);
+    }
+
+    @GetMapping("/nearby")
+    public List<RideResponse> getNearbyRides(Authentication authentication) {
+        String username = authentication.getName();
+        return rideService.getNearbyRides(username);
     }
 
 

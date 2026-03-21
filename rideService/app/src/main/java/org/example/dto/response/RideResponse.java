@@ -4,7 +4,7 @@ package org.example.dto.response;
 import lombok.*;
 import org.example.enums.RideStatus;
 
-import java.math.BigDecimal;
+
 import java.time.LocalDateTime;
 
 @NoArgsConstructor
@@ -18,6 +18,10 @@ public class RideResponse {
 
     private String createrId;
 
+    private String creatorName;
+
+    private String creatorPhone;
+
 
     private String toLocation;
 
@@ -30,11 +34,6 @@ public class RideResponse {
 
     private Integer seatsAvailable;
 
-
-    private BigDecimal totalFare;
-
     private RideStatus rideStatus;
-
-    private BigDecimal farePerPerson;
 
 }

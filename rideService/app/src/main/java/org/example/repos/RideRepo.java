@@ -38,7 +38,7 @@ public interface RideRepo extends JpaRepository<Ride, String> {
 
     Page<Ride> findByCreaterId(String createrId, Pageable pageable);
 
-    @Query("SELECT r FROM Ride r JOIN r.bookings b WHERE b.userId = :userId")
-    Page<Ride> findRidesByPassengerId(@Param("userId") String userId, Pageable pageable);
-
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query("DELETE FROM Ride r WHERE r.departureTime < :time")
+    void deleteAllByDepartureTimeBefore(@org.springframework.data.repository.query.Param("time") LocalDateTime time);
 }

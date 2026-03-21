@@ -14,4 +14,5 @@ public class JwtResponseDTO {
     private String token;
     private String userName;
     private String email;
+    private String userId;
 }

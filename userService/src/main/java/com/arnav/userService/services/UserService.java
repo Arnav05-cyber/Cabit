@@ -25,6 +25,8 @@ public class UserService {
             userToSave.setFirstName(userDto.getFirstName());
             userToSave.setLastName(userDto.getLastName());
             userToSave.setPhoneNumber(userDto.getPhoneNumber());
+            userToSave.setPlace1(userDto.getPlace1());
+            userToSave.setPlace2(userDto.getPlace2());
             // We usually don't update ID as it's the PK or immutable identity, but keeping logic similar to before if needed.
             // basic update logic
         } else {
@@ -34,6 +36,8 @@ public class UserService {
                     .lastName(userDto.getLastName())
                     .phoneNumber(userDto.getPhoneNumber())
                     .email(userDto.getEmail())
+                    .place1(userDto.getPlace1())
+                    .place2(userDto.getPlace2())
                     .build();
         }
 
@@ -54,6 +58,8 @@ public class UserService {
                 .lastName(user.getLastName())
                 .phoneNumber(user.getPhoneNumber())
                 .email(user.getEmail())
+                .place1(user.getPlace1())
+                .place2(user.getPlace2())
                 .build();
     }
 

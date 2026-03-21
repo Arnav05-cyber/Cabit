@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.ArrayList;
 
 @Service
 public class RedisGeoService {
@@ -39,6 +40,58 @@ public class RedisGeoService {
 
     public void removeRideLocation(String rideId) {
         stringRedisTemplate.opsForZSet().remove(RIDE_LOCATION_KEY, rideId);
+    }
+
+    public void addUserLocation(String userId, LatLang location, int placeIndex){
+        if(location != null) {
+            stringRedisTemplate.opsForGeo().add("user_location",
+                    new Point(location.getLongitude(), location.getLatitude()), userId + "_" + placeIndex);
+        }
+    }
+
+    public List<String> findUsersNear(LatLang location, double radius){
+        if(location == null) return List.of();
+        
+        Circle area = new Circle(new Point(location.getLongitude(), location.getLatitude()),
+                new Distance(radius, Metrics.KILOMETERS));
+
+        GeoResults<RedisGeoCommands.GeoLocation<String>> results =
+                stringRedisTemplate.opsForGeo().radius("user_location", area);
+
+        if(results == null) return List.of();
+        
+        return results.getContent().stream()
+                .map(result -> {
+                    String name = result.getContent().getName();
+                    int lastIndex = name.lastIndexOf('_');
+                    return lastIndex > 0 ? name.substring(0, lastIndex) : name;
+                })
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    public List<Point> getUserPositions(String userId) {
+        List<Point> p1 = stringRedisTemplate.opsForGeo().position("user_location", userId + "_1");
+        List<Point> p2 = stringRedisTemplate.opsForGeo().position("user_location", userId + "_2");
+        List<Point> positions = new ArrayList<>();
+        if (p1 != null && !p1.isEmpty() && p1.get(0) != null) positions.add(p1.get(0));
+        if (p2 != null && !p2.isEmpty() && p2.get(0) != null) positions.add(p2.get(0));
+        return positions;
+    }
+
+    public void saveUserInfo(String userId, String name, String phone) {
+        if (name != null) stringRedisTemplate.opsForHash().put("user_info:" + userId, "name", name);
+        if (phone != null) stringRedisTemplate.opsForHash().put("user_info:" + userId, "phoneNumber", phone);
+    }
+
+    public String getUserName(String userId) {
+        Object name = stringRedisTemplate.opsForHash().get("user_info:" + userId, "name");
+        return name != null ? name.toString() : null;
+    }
+
+    public String getUserPhone(String userId) {
+        Object phone = stringRedisTemplate.opsForHash().get("user_info:" + userId, "phoneNumber");
+        return phone != null ? phone.toString() : null;
     }
 
 }
