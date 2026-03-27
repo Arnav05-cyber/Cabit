@@ -16,17 +16,21 @@ sequenceDiagram
     participant RedisGeo
     participant ORS as OpenRouteService
     participant Nom as Nominatim
+    participant Zipkin as Zipkin (Tracing)
 
     App->>AuthService: POST /auth/v1/signup
+    AuthService-->>Zipkin: Export Trace [TraceID: X]
     AuthService->>Kafka: Publish "User Info Event"
     AuthService-->>App: 200 OK (JWT)
 
     par Async Profile Creation
         Kafka->>UserService: Consume Event
+        UserService-->>Zipkin: Export Span [TraceID: X]
         UserService->>RedisGeo: Cache User Contact Info
     end
 
     App->>RideService: POST /v1/ride/create
+    RideService-->>Zipkin: Export Trace [TraceID: Y]
     RideService->>Nom: Geocode From/To Addresses
     RideService->>ORS: Calculate Route Polyline
     RideService->>RedisGeo: GeoAdd From/To Locations
@@ -35,6 +39,13 @@ sequenceDiagram
 ```
 
 ## 🌟 Key Features
+
+### 1. Distributed Tracing & Observability
+
+The architecture is fully observable:
+- **Micrometer Tracing**: Injects robust trace context directly into the Slf4j logs.
+- **Zipkin Integration**: All HTTP calls and Kafka asynchronous messages export spans to a centralized Zipkin container (`http://localhost:9411`), allowing you to visualize EXACTLY how long requests take across the entire distributed system.
+- **Kafka Propagation**: Trace IDs are automatically serialized into Kafka Headers to maintain the chain of custody when `User Info Events` or `Ride Created Events` are consumed asynchronously.
 
 ### 1. High Scalability
 

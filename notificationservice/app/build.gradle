@@ -38,6 +38,11 @@ dependencies {
     implementation 'io.jsonwebtoken:jjwt-api:0.11.5' // Or whichever JWT library version you used in AuthService
     implementation 'io.jsonwebtoken:jjwt-impl:0.11.5'
     implementation 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+
+    /* ================= TRACING ================= */
+    implementation 'io.micrometer:micrometer-tracing-bridge-brave'
+    implementation 'io.zipkin.reporter2:zipkin-reporter-brave'
+    implementation 'io.micrometer:micrometer-observation'
 }
 
 test {

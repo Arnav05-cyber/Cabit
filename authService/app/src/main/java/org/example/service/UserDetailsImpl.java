@@ -67,7 +67,15 @@ public class UserDetailsImpl implements UserDetailsService {
         
         // Save user in AUTH SERVICE database (for login authentication)
         String userId = UUID.randomUUID().toString();
-        userRepo.save(new UserInfo(userId, userInfoDto.getUserName(), encodedPassword, userInfoDto.getEmail(), userInfoDto.getPlace1(), userInfoDto.getPlace2(), null));
+        userRepo.save(new UserInfo(
+            userId, 
+            userInfoDto.getUserName(), 
+            encodedPassword, 
+            userInfoDto.getEmail(), 
+            userInfoDto.getPlace1(), 
+            userInfoDto.getPlace2(), 
+            new java.util.HashSet<>()
+        ));
         
         // Send Kafka event to USER SERVICE (for user profile)
         try {

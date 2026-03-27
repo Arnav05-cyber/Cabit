@@ -42,7 +42,11 @@ public class AuthController {
         try {
             Boolean isSignedUp = userDetailsImpl.signUpUser(userInfoDto);
             if(Boolean.FALSE.equals(isSignedUp)) {
-                return ResponseEntity.status(400).body("User signup failed. User may already exist or invalid data provided.");
+                // Check if user already exists to give a more specific message
+                if (userRepo.findByUserName(userInfoDto.getUserName()) != null) {
+                    return ResponseEntity.status(400).body(Map.of("message", "Username already exists. Please choose a different one."));
+                }
+                return ResponseEntity.status(400).body(Map.of("message", "Invalid email or password. Password must be at least 4 characters and contain uppercase, lowercase, a digit, and a special character (!@#$%^&*()-+)."));
             }
             System.out.println("User signed up successfully: " + userInfoDto.getUserName());
             RefreshToken refreshToken = refreshTokenService.createRefreshToken(userInfoDto.getUserName());
@@ -59,7 +63,7 @@ public class AuthController {
                     .userId(savedUser.getUserId())
                     .build(), HttpStatus.OK);
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Internal server error: " + e.getMessage());
+            return ResponseEntity.status(500).body(Map.of("message", "Internal server error: " + e.getMessage()));
         }
     }
 

@@ -2,9 +2,9 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
 // Base URLs for different services
-export const AUTH_BASE = 'http://192.168.1.7:8081';
-export const RIDE_BASE = 'http://192.168.1.7:8082';
-export const NOTIF_BASE = 'http://192.168.1.7:8084';
+export const AUTH_BASE = 'http://192.168.1.17:8081';
+export const RIDE_BASE = 'http://192.168.1.17:8082';
+export const NOTIF_BASE = 'http://192.168.1.17:8084';
 
 // Auth Service instance
 export const authApi = axios.create({

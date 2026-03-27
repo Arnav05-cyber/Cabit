@@ -32,6 +32,9 @@ public class KafkaConfig {
 
     @Bean
     public KafkaTemplate<String, UserInfoDto> kafkaTemplate() {
-        return new KafkaTemplate<>(producerFactory());
+        KafkaTemplate<String, UserInfoDto> template = new KafkaTemplate<>(producerFactory());
+        // Enable observation so Trace IDs are injected into outbound Kafka message headers
+        template.setObservationEnabled(true);
+        return template;
     }
 }

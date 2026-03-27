@@ -36,7 +36,18 @@ export default function RegisterScreen({ navigation }) {
     try {
       await register(name.trim(), email.trim(), password, phoneNumber.trim(), place1.trim(), place2.trim());
     } catch (err) {
-      const msg = err.response?.data?.message || 'Registration failed. Please try again.';
+      console.log("Registration Error:", err);
+      const data = err.response?.data;
+      
+      let msg = 'Registration failed. Please try again.';
+      if (typeof data === 'object' && data?.message) {
+        msg = data.message;
+      } else if (typeof data === 'string' && data) {
+        msg = data;
+      } else if (err.message) {
+        msg = `Network/System Error: ${err.message}`;
+      }
+
       Alert.alert('Registration Failed', msg);
     } finally {
       setLoading(false);
@@ -146,6 +157,9 @@ export default function RegisterScreen({ navigation }) {
             value={password}
             onChangeText={setPassword}
           />
+          <Text style={{ fontSize: 11, color: '#90A4AE', marginTop: -10, marginBottom: 14 }}>
+            Must include uppercase, lowercase, digit & special char (!@#$%^&*()-+)
+          </Text>
 
           <Text style={labelStyle}>CONFIRM PASSWORD</Text>
           <TextInput
