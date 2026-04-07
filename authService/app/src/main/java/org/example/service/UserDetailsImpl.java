@@ -3,10 +3,7 @@ package org.example.service;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.example.entities.UserInfo;
-import org.example.eventProducer.UserInfoProducer;
 import org.example.model.UserInfoDto;
 import org.example.repos.UserRepo;
 import org.example.utils.ValidateUserUtil;
@@ -33,7 +30,7 @@ public class UserDetailsImpl implements UserDetailsService {
     private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    private final UserInfoProducer userInfoProducer;
+    private final KafkaEventSender kafkaEventSender;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -78,17 +75,10 @@ public class UserDetailsImpl implements UserDetailsService {
         ));
         
         // Send Kafka event to USER SERVICE (for user profile)
-        try {
-            userInfoDto.setPassword(null); // Don't send password in event
-            userInfoDto.setUserId(userId); // Send generated userId to keep IDs consistent
-            userInfoProducer.sendEvent(userInfoDto);
-            System.out.println("EVENT SENT TO KAFKA: " + userInfoDto.getUserName());
-            return true;
-        } catch (Exception e) {
-            System.err.println("Failed to send user signup event: " + e.getMessage());
-            // Even if Kafka fails, user is saved in auth DB for login
-            return true;
-        }
+        userInfoDto.setPassword(null);
+        userInfoDto.setUserId(userId);
+        kafkaEventSender.trySendingEvent(userInfoDto);
+        return true;
     }
 
 
