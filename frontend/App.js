@@ -6,6 +6,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { WebSocketProvider } from './src/context/WebSocketContext';
 import { ActivityIndicator, View, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 // Import Screens
 import LoginScreen from './src/screens/auth/LoginScreen';
@@ -26,19 +27,19 @@ function MainTabs() {
     <Tab.Navigator
       screenOptions={{
         headerShown: true,
-        headerStyle: { backgroundColor: '#1A237E' },
-        headerTintColor: '#fff',
+        headerStyle: { backgroundColor: '#FFFFFF', shadowOpacity: 0, elevation: 0, borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
+        headerTintColor: '#0F172A',
         tabBarStyle: {
-          backgroundColor: '#fff',
+          backgroundColor: '#FFFFFF',
           borderTopWidth: 1,
-          borderTopColor: '#E3F2FD',
+          borderTopColor: '#E2E8F0',
           height: 60,
           paddingBottom: 8,
           paddingTop: 8,
         },
-        tabBarActiveTintColor: '#1565C0',
-        tabBarInactiveTintColor: '#90A4AE',
-        headerTitleStyle: { fontWeight: '800', letterSpacing: 0.5 },
+        tabBarActiveTintColor: '#2563EB',
+        tabBarInactiveTintColor: '#94A3B8',
+        headerTitleStyle: { fontWeight: '700', letterSpacing: 0, fontSize: 18 },
       }}
     >
       <Tab.Screen
@@ -46,7 +47,7 @@ function MainTabs() {
         component={FindRidesScreen}
         options={{
           title: 'Find Rides',
-          tabBarIcon: () => <View><Text style={{fontSize: 20}}>🔍</Text></View>,
+          tabBarIcon: ({ color, size }) => <Ionicons name="search" size={size} color={color} />,
         }}
       />
       <Tab.Screen
@@ -54,7 +55,7 @@ function MainTabs() {
         component={OfferRideScreen}
         options={{
           title: 'Offer a Ride',
-          tabBarIcon: () => <View><Text style={{fontSize: 20}}>🚗</Text></View>,
+          tabBarIcon: ({ color, size }) => <Ionicons name="add-circle-outline" size={size} color={color} />,
         }}
       />
       <Tab.Screen
@@ -63,7 +64,7 @@ function MainTabs() {
         options={{
           title: 'My Bookings',
           headerShown: false, // Custom header in screen
-          tabBarIcon: () => <View><Text style={{fontSize: 20}}>🎒</Text></View>,
+          tabBarIcon: ({ color, size }) => <Ionicons name="list" size={size} color={color} />,
         }}
       />
     </Tab.Navigator>
@@ -76,8 +77,8 @@ function RootNavigator() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1A237E' }}>
-        <ActivityIndicator size="large" color="#fff" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8FAFC' }}>
+        <ActivityIndicator size="large" color="#0F172A" />
       </View>
     );
   }
@@ -94,8 +95,9 @@ function RootNavigator() {
             options={{
               headerShown: true,
               title: 'Ride Details',
-              headerStyle: { backgroundColor: '#1A237E' },
-              headerTintColor: '#fff',
+              headerStyle: { backgroundColor: '#FFFFFF', shadowOpacity: 0, elevation: 0, borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
+              headerTintColor: '#0F172A',
+              headerTitleStyle: { fontWeight: '700' },
               headerBackTitleVisible: false,
             }}
           />

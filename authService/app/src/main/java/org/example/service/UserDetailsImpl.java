@@ -81,5 +81,52 @@ public class UserDetailsImpl implements UserDetailsService {
         return true;
     }
 
+    @Transactional
+    public UserInfo signUpOAuthUser(String email, String name) {
+        UserInfo user = userRepo.findByEmail(email);
+        if (user != null) {
+            return user; // User already exists
+        }
+
+        System.out.println("Auto-registering OAuth user: " + email);
+        
+        // Generate a random password since they login via Google
+        String randomPassword = UUID.randomUUID().toString();
+        String encodedPassword = passwordEncoder.encode(randomPassword);
+        
+        String userId = UUID.randomUUID().toString();
+        
+        // Ensure place1, place2 are not null but empty strings if needed
+        user = new UserInfo(
+            userId, 
+            email, // Use email as username
+            encodedPassword, 
+            email, 
+            "", // place1
+            "", // place2
+            new java.util.HashSet<>()
+        );
+        
+        userRepo.save(user);
+        
+        // Send Kafka event to USER SERVICE
+        UserInfoDto userInfoDto = new UserInfoDto();
+        userInfoDto.setUserId(userId);
+        userInfoDto.setUserName(email); // Use email as username
+        userInfoDto.setEmail(email);
+        
+        // Split name into first and last name if possible
+        if (name != null) {
+            String[] parts = name.split(" ", 2);
+            userInfoDto.setFirstName(parts[0]);
+            if (parts.length > 1) {
+                userInfoDto.setLastName(parts[1]);
+            }
+        }
+        
+        kafkaEventSender.trySendingEvent(userInfoDto);
+        
+        return user;
+    }
 
 }

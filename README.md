@@ -9,6 +9,7 @@ The system is split into four primary microservices: `auth-service`, `user-servi
 ```mermaid
 sequenceDiagram
     participant App as Mobile App
+    participant Google as Google OAuth
     participant AuthService
     participant Kafka
     participant UserService
@@ -18,10 +19,13 @@ sequenceDiagram
     participant Nom as Nominatim
     participant Zipkin as Zipkin (Tracing)
 
-    App->>AuthService: POST /auth/v1/signup
+    App->>Google: Authenticate (Sign in with Google)
+    Google-->>App: Google ID Token
+    App->>AuthService: POST /auth/v1/google (ID Token)
+    AuthService-->AuthService: Verify Cryptographic Signature
     AuthService-->>Zipkin: Export Trace [TraceID: X]
     AuthService->>Kafka: Publish "User Info Event"
-    AuthService-->>App: 200 OK (JWT)
+    AuthService-->>App: 200 OK (Cabit JWT)
 
     par Async Profile Creation
         Kafka->>UserService: Consume Event
@@ -51,7 +55,7 @@ The architecture is fully observable:
 
 The system handles high traffic loads efficiently:
 
-- **Stateless Authentication**: Uses **JWT (JSON Web Tokens)** with embedded user UUID claims, allowing the `auth-service` to scale horizontally.
+- **Stateless Authentication**: Uses **JWT (JSON Web Tokens)** with embedded user UUID claims, allowing the `auth-service` to scale horizontally. Now natively supports **Google OAuth2** for password-less, secure authentication verifying signatures externally.
 - **Asynchronous Processing**: **Kafka** queues user profile mutations and ride creations, ensuring that critical workflows never block globally.
 - **Blazing Fast Geospatial Searches**: **Redis** is natively used for caching user metrics and creating scalable, high-throughput geospatial indexes.
 
@@ -70,9 +74,10 @@ The system handles high traffic loads efficiently:
 
 ### A. Auth Service (`org.example`)
 
-**Responsibility**: Authentication, Token Generation, Credential Storage.
+**Responsibility**: Authentication, Token Generation, Credential Storage, Google OAuth Validation.
 
-- **Endpoints**: Handles `/auth/v1/signup`, `/auth/v1/login`, and `/auth/v1/logout`.
+- **Endpoints**: Handles `/auth/v1/signup`, `/auth/v1/login`, `/auth/v1/logout`, and `/auth/v1/google`.
+- **OAuth2 Flow**: Intercepts Google ID tokens, cryptographically verifies them using `google-api-client`, and seamlessly merges or creates cross-service OAuth user entities dynamically.
 - **Producer**: Publishes user profile events to Kafka upon signup.
 - **Security**: Embeds UUIDs deep into the token subject pool for accurate global downstream validation.
 

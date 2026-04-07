@@ -17,21 +17,45 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;  // Change this
+import org.springframework.web.bind.annotation.RestController;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
+import org.example.request.GoogleLoginRequest;
+import org.example.service.UserDetailsImpl;
+import org.springframework.beans.factory.annotation.Value;
+import jakarta.annotation.PostConstruct;
+import java.util.Collections;
 @RestController  // Changed from @Controller to @RestController
 public class TokenController {
 
     private final AuthenticationManager authenticationManager;
     private final RefreshTokenService refreshTokenService;
     private final JwtService jwtService;
+    private final UserDetailsImpl userDetailsImpl;
+
+    @Value("${google.client.id}")
+    private String googleClientId;
+
+    private GoogleIdTokenVerifier verifier;
 
     public TokenController(AuthenticationManager authenticationManager,
                            RefreshTokenService refreshTokenService,
-                           JwtService jwtService) {
+                           JwtService jwtService,
+                           UserDetailsImpl userDetailsImpl) {
         this.authenticationManager = authenticationManager;
         this.refreshTokenService = refreshTokenService;
         this.jwtService = jwtService;
+        this.userDetailsImpl = userDetailsImpl;
+    }
+
+    @PostConstruct
+    public void init() {
+        verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
+            .setAudience(Collections.singletonList(googleClientId))
+            .build();
     }
 
     @PostMapping("/auth/v1/login")
@@ -106,5 +130,46 @@ public class TokenController {
                 .orElseThrow(() ->
                         new RuntimeException("Refresh token is not in database!")
                 );
+    }
+
+    @PostMapping("/auth/v1/google")
+    public ResponseEntity<?> googleLogin(@RequestBody GoogleLoginRequest request) {
+        try {
+            GoogleIdToken idToken = verifier.verify(request.getIdToken());
+            if (idToken != null) {
+                GoogleIdToken.Payload payload = idToken.getPayload();
+
+                String email = payload.getEmail();
+                String name = (String) payload.get("name");
+
+                // Check or register user
+                UserInfo userInfo = userDetailsImpl.signUpOAuthUser(email, name);
+
+                // Create tokens
+                RefreshToken refreshToken = refreshTokenService.createRefreshToken(userInfo.getUserName());
+                
+                java.util.Map<String, Object> extraClaims = new java.util.HashMap<>();
+                extraClaims.put("userId", userInfo.getUserId());
+                String jwtToken = jwtService.generateToken(
+                        new org.example.service.CustomUserDetails(userInfo), extraClaims);
+
+                return new ResponseEntity<>(
+                        JwtResponseDTO.builder()
+                                .accessToken(jwtToken)
+                                .token(refreshToken.getToken())
+                                .userName(userInfo.getUserName())
+                                .email(userInfo.getEmail())
+                                .userId(userInfo.getUserId())
+                                .build(),
+                        HttpStatus.OK
+                );
+
+            } else {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid ID token.");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error verifying token: " + e.getMessage());
+        }
     }
 }

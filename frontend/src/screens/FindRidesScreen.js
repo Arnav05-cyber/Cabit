@@ -12,6 +12,7 @@ import {
   Dimensions,
 } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
+import { Ionicons } from '@expo/vector-icons';
 import polyline from '@mapbox/polyline';
 import { rideApi } from '../api/apiClient';
 import RideCard from '../components/RideCard';
@@ -129,7 +130,7 @@ export default function FindRidesScreen({ navigation }) {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#1565C0" />
+        <ActivityIndicator size="large" color="#0F172A" />
         <Text style={styles.loadingText}>Finding rides nearby...</Text>
       </View>
     );
@@ -141,12 +142,12 @@ export default function FindRidesScreen({ navigation }) {
       <View style={styles.mapContainer}>
         <MapView
           ref={mapRef}
-          provider={PROVIDER_DEFAULT}
-          style={StyleSheet.absoluteFillObject}
+          // Using default allows native iOS/Android to pick the best provider without issues
+          // Removed customMapStyle which can cause the black screen on iOS non-Google maps
+          style={styles.map}
           initialRegion={initialRegion}
           showsUserLocation
           showsMyLocationButton={false}
-          customMapStyle={mapDarkStyle}
         >
           {filteredRides.map((ride) => {
             const coords = getMarkerCoords(ride);
@@ -160,8 +161,7 @@ export default function FindRidesScreen({ navigation }) {
                 description={`→ ${ride.toLocation}`}
               >
                 <View style={[styles.customMarker, isSelected && styles.selectedMarker]}>
-                  <Text style={styles.markerEmoji}>🚗</Text>
-
+                  <Ionicons name="car" size={16} color="#FFFFFF" />
                 </View>
               </Marker>
             );
@@ -173,8 +173,8 @@ export default function FindRidesScreen({ navigation }) {
               coordinate={getEndCoords(selectedRide)}
               title={selectedRide.toLocation}
             >
-              <View style={[styles.customMarker, { backgroundColor: '#E53935' }]}>
-                <Text style={styles.markerEmoji}>📍</Text>
+              <View style={[styles.customMarker, { backgroundColor: '#EF4444', borderColor: '#FFFFFF' }]}>
+                <Ionicons name="flag" size={12} color="#FFFFFF" />
               </View>
             </Marker>
           )}
@@ -183,8 +183,8 @@ export default function FindRidesScreen({ navigation }) {
           {decodedPath.length > 0 && (
             <Polyline
               coordinates={decodedPath}
-              strokeColor="#42A5F5"
-              strokeWidth={4}
+              strokeColor="#2563EB"
+              strokeWidth={3}
               lineDashPattern={[1]}
             />
           )}
@@ -222,26 +222,26 @@ export default function FindRidesScreen({ navigation }) {
 
         {/* Search Bar */}
         <View style={styles.searchContainer}>
-          <Text style={styles.searchIcon}>🔍</Text>
+          <Ionicons name="search" size={18} color="#64748B" style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search from / to location..."
-            placeholderTextColor="#90A4AE"
+            placeholderTextColor="#94A3B8"
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Text style={{ color: '#90A4AE', paddingRight: 8 }}>✕</Text>
+              <Ionicons name="close-circle" size={20} color="#94A3B8" />
             </TouchableOpacity>
           )}
         </View>
 
         {filteredRides.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Text style={{ fontSize: 48 }}>😔</Text>
+            <Ionicons name="car-outline" size={64} color="#CBD5E1" />
             <Text style={styles.emptyTitle}>No rides found</Text>
-            <Text style={styles.emptySubtitle}>Try a different search or pull to refresh</Text>
+            <Text style={styles.emptySubtitle}>Try a different search or pull down to refresh</Text>
           </View>
         ) : (
           <FlatList
@@ -267,7 +267,7 @@ export default function FindRidesScreen({ navigation }) {
                   setRefreshing(true);
                   fetchRides();
                 }}
-                tintColor="#1565C0"
+                tintColor="#0F172A"
               />
             }
           />
@@ -277,95 +277,95 @@ export default function FindRidesScreen({ navigation }) {
   );
 }
 
-// Clean map style for a professional look
-const mapDarkStyle = [
-  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#C9DCF3' }] },
-  { featureType: 'landscape', stylers: [{ color: '#F5F7FF' }] },
-  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#FFFFFF' }] },
-  { featureType: 'road.arterial', elementType: 'geometry', stylers: [{ color: '#EEF1FF' }] },
-  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#DBEAFE' }] },
-  { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#D1FAE5' }] },
-  { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
-];
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F7FF' },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F5F7FF' },
-  loadingText: { marginTop: 12, color: '#546E7A', fontSize: 14 },
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8FAFC' },
+  loadingText: { marginTop: 12, color: '#64748B', fontSize: 14, fontWeight: '500' },
   mapContainer: {
     height: SCREEN_HEIGHT * 0.38,
+    width: '100%',
     position: 'relative',
+    backgroundColor: '#E2E8F0', // Shows while map loads
+  },
+  map: {
+    ...StyleSheet.absoluteFillObject,
   },
   mapBadge: {
     position: 'absolute',
-    top: 16,
+    top: 50, // Pushed down to clear notch if any
     alignSelf: 'center',
-    backgroundColor: 'rgba(21, 101, 192, 0.9)',
+    backgroundColor: '#0F172A',
     paddingHorizontal: 16,
-    paddingVertical: 6,
+    paddingVertical: 8,
     borderRadius: 20,
-  },
-  mapBadgeText: { color: '#fff', fontWeight: '700', fontSize: 13 },
-  customMarker: {
-    backgroundColor: '#1565C0',
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#fff',
     shadowColor: '#000',
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  mapBadgeText: { color: '#FFFFFF', fontWeight: '600', fontSize: 12, letterSpacing: 0.5 },
+  customMarker: {
+    backgroundColor: '#0F172A',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
     shadowRadius: 4,
-    elevation: 4,
+    elevation: 3,
   },
   selectedMarker: {
-    backgroundColor: '#E53935',
-    transform: [{ scale: 1.15 }],
+    backgroundColor: '#3B82F6',
+    transform: [{ scale: 1.2 }],
+    zIndex: 1,
   },
-  markerEmoji: { fontSize: 14 },
 
   listSection: {
     flex: 1,
-    backgroundColor: '#F5F7FF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    marginTop: -16,
-    paddingTop: 12,
+    backgroundColor: '#F8FAFC',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    marginTop: -24,
+    paddingTop: 24,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 5,
   },
   tabRow: {
     flexDirection: 'row',
     marginHorizontal: 16,
-    marginBottom: 10,
-    backgroundColor: '#E8EEF9',
-    borderRadius: 12,
-    padding: 4,
+    marginBottom: 16,
+    backgroundColor: '#E2E8F0',
+    borderRadius: 10,
+    padding: 3,
   },
   tab: {
     flex: 1,
     paddingVertical: 8,
     alignItems: 'center',
-    borderRadius: 10,
+    borderRadius: 8,
   },
-  activeTab: { backgroundColor: '#fff', shadowColor: '#1A237E', shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
-  tabText: { fontSize: 13, color: '#78909C', fontWeight: '600' },
-  activeTabText: { color: '#1A237E', fontWeight: '800' },
+  activeTab: { backgroundColor: '#FFFFFF', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 3, elevation: 1 },
+  tabText: { fontSize: 13, color: '#64748B', fontWeight: '600' },
+  activeTabText: { color: '#0F172A', fontWeight: '700' },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
     marginHorizontal: 16,
-    marginBottom: 10,
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
+    marginBottom: 16,
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
-  searchIcon: { fontSize: 16, marginRight: 8 },
-  searchInput: { flex: 1, height: 44, fontSize: 14, color: '#1A237E' },
-  emptyContainer: { alignItems: 'center', paddingTop: 50 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#1A237E', marginTop: 12 },
-  emptySubtitle: { fontSize: 14, color: '#90A4AE', marginTop: 4 },
+  searchIcon: { marginRight: 10 },
+  searchInput: { flex: 1, height: 48, fontSize: 14, color: '#0F172A', fontWeight: '500' },
+  emptyContainer: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 40 },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#1E293B', marginTop: 16 },
+  emptySubtitle: { fontSize: 14, color: '#64748B', marginTop: 8, textAlign: 'center', lineHeight: 20 },
 });

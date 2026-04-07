@@ -40,6 +40,18 @@ export const AuthProvider = ({ children }) => {
     return response.data;
   };
 
+  const googleLogin = async (idToken) => {
+    const response = await authApi.post('/auth/v1/google', { idToken });
+    const { accessToken: jwt, token: refreshToken, userName, email: userEmail } = response.data;
+    const userData = { name: userName, email: userEmail };
+    await SecureStore.setItemAsync('jwt_token', jwt);
+    if (refreshToken) await SecureStore.setItemAsync('refresh_token', refreshToken);
+    await SecureStore.setItemAsync('user_data', JSON.stringify(userData));
+    setToken(jwt);
+    setUser(userData);
+    return response.data;
+  };
+
   const register = async (name, email, password, phoneNumber, place1, place2) => {
     const nameParts = name.trim().split(' ');
     const firstName = nameParts[0];
@@ -73,7 +85,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ token, user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ token, user, loading, login, googleLogin, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

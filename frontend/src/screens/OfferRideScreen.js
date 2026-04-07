@@ -11,6 +11,7 @@ import {
   Platform,
   StyleSheet,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { rideApi } from '../api/apiClient';
 
@@ -98,14 +99,17 @@ export default function OfferRideScreen({ navigation }) {
       <ScrollView contentContainerStyle={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Offer a Ride 🚗</Text>
+          <Text style={styles.headerTitle}>Offer a Ride</Text>
           <Text style={styles.headerSubtitle}>Share your journey with fellow students</Text>
         </View>
 
         {/* Form Card */}
         <View style={styles.card}>
           {/* Route Section */}
-          <Text style={styles.sectionTitle}>📍 Route Details</Text>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="location-outline" size={20} color="#0F172A" style={styles.sectionIcon} />
+            <Text style={styles.sectionTitle}>Route Details</Text>
+          </View>
 
           <Text style={labelStyle}>FROM *</Text>
           <LocationInput
@@ -122,12 +126,15 @@ export default function OfferRideScreen({ navigation }) {
           />
 
           {/* Departure Time */}
-          <Text style={styles.sectionTitle}>🕐 Departure</Text>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="time-outline" size={20} color="#0F172A" style={styles.sectionIcon} />
+            <Text style={styles.sectionTitle}>Departure</Text>
+          </View>
           <TouchableOpacity
             style={styles.dateButton}
             onPress={handleOpenPicker}
           >
-            <Text style={styles.dateIcon}>📅</Text>
+            <Ionicons name="calendar-outline" size={22} color="#64748B" style={styles.dateIcon} />
             <View>
               <Text style={styles.dateLabel}>Departure Time</Text>
               <Text style={styles.dateValue}>
@@ -137,7 +144,7 @@ export default function OfferRideScreen({ navigation }) {
                 })}
               </Text>
             </View>
-            <Text style={{ marginLeft: 'auto', color: '#1565C0', fontWeight: '700' }}>Change</Text>
+            <Text style={{ marginLeft: 'auto', color: '#2563EB', fontWeight: '700' }}>Change</Text>
           </TouchableOpacity>
 
           {Platform.OS === 'ios' && showDatePicker && (
@@ -154,7 +161,10 @@ export default function OfferRideScreen({ navigation }) {
           )}
 
           {/* Ride Details */}
-          <Text style={styles.sectionTitle}>🎟️ Ride Info</Text>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="information-circle-outline" size={20} color="#0F172A" style={styles.sectionIcon} />
+            <Text style={styles.sectionTitle}>Ride Info</Text>
+          </View>
 
           <View style={styles.row}>
             <View style={{ flex: 1, marginRight: 8 }}>
@@ -162,7 +172,7 @@ export default function OfferRideScreen({ navigation }) {
               <TextInput
                 style={[inputStyle, { textAlign: 'center' }]}
                 placeholder="1–7"
-                placeholderTextColor="#B0BEC5"
+                placeholderTextColor="#94A3B8"
                 keyboardType="number-pad"
                 value={totalSeats}
                 onChangeText={setTotalSeats}
@@ -177,7 +187,7 @@ export default function OfferRideScreen({ navigation }) {
           <TextInput
             style={[inputStyle, { height: 80, textAlignVertical: 'top', paddingTop: 12 }]}
             placeholder="e.g. No smoking, luggage space available..."
-            placeholderTextColor="#B0BEC5"
+            placeholderTextColor="#94A3B8"
             multiline
             value={notes}
             onChangeText={setNotes}
@@ -194,7 +204,7 @@ export default function OfferRideScreen({ navigation }) {
             ) : (
               <>
                 <Text style={styles.submitButtonText}>Post Ride</Text>
-                <Text style={{ color: '#fff', fontSize: 18, marginLeft: 8 }}>→</Text>
+                <Ionicons name="arrow-forward" size={20} color="#FFFFFF" style={{ marginLeft: 8 }} />
               </>
             )}
           </TouchableOpacity>
@@ -202,8 +212,9 @@ export default function OfferRideScreen({ navigation }) {
 
         {/* Info Banner */}
         <View style={styles.infoBanner}>
+          <Ionicons name="bulb-outline" size={20} color="#2563EB" style={{ marginRight: 10, marginTop: 2 }} />
           <Text style={styles.infoBannerText}>
-            💡 Your ride will be visible to verified students on the platform once posted.
+            Your ride will be visible to verified students on the platform once posted.
           </Text>
         </View>
       </ScrollView>
@@ -218,7 +229,7 @@ function LocationInput({ value, onChange, placeholder }) {
       <TextInput
         style={styles.locationInput}
         placeholder={placeholder}
-        placeholderTextColor="#B0BEC5"
+        placeholderTextColor="#94A3B8"
         value={value}
         onChangeText={onChange}
       />
@@ -235,92 +246,100 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 26,
     fontWeight: '800',
-    color: '#1A237E',
+    color: '#0F172A',
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#78909C',
+    color: '#64748B',
     marginTop: 4,
   },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: '#1A237E',
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
-    elevation: 5,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 2,
     marginBottom: 16,
   },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#1A237E',
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 12,
     marginTop: 8,
   },
+  sectionIcon: {
+    marginRight: 6,
+  },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
   label: {
     fontSize: 11,
-    color: '#546E7A',
+    color: '#475569',
     fontWeight: '700',
-    marginBottom: 6,
+    marginBottom: 8,
     letterSpacing: 0.5,
   },
   input: {
-    backgroundColor: '#F5F7FF',
-    borderRadius: 12,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 10,
     padding: 14,
     fontSize: 15,
-    color: '#1A237E',
+    color: '#0F172A',
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#E3F2FD',
+    borderColor: '#E2E8F0',
   },
   locationInputContainer: {
-    backgroundColor: '#F5F7FF',
-    borderRadius: 12,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#E3F2FD',
+    borderColor: '#E2E8F0',
     marginBottom: 16,
   },
   locationInput: {
     padding: 14,
     fontSize: 15,
-    color: '#1A237E',
+    color: '#0F172A',
   },
   dateButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F5F7FF',
-    borderRadius: 12,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 10,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#E3F2FD',
+    borderColor: '#E2E8F0',
     marginBottom: 16,
   },
-  dateIcon: { fontSize: 22, marginRight: 12 },
-  dateLabel: { fontSize: 11, color: '#78909C', fontWeight: '700' },
-  dateValue: { fontSize: 14, color: '#1A237E', fontWeight: '600', marginTop: 2 },
+  dateIcon: { marginRight: 12 },
+  dateLabel: { fontSize: 11, color: '#64748B', fontWeight: '700' },
+  dateValue: { fontSize: 14, color: '#0F172A', fontWeight: '600', marginTop: 2 },
   row: { flexDirection: 'row' },
   submitButton: {
-    backgroundColor: '#1565C0',
-    borderRadius: 14,
-    padding: 18,
+    backgroundColor: '#2563EB',
+    borderRadius: 10,
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#1565C0',
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 8,
     marginTop: 8,
   },
-  submitButtonDisabled: { backgroundColor: '#B0BEC5', shadowOpacity: 0 },
-  submitButtonText: { color: '#fff', fontSize: 17, fontWeight: '800' },
+  submitButtonDisabled: { backgroundColor: '#94A3B8', shadowOpacity: 0 },
+  submitButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   infoBanner: {
-    backgroundColor: '#E3F2FD',
-    borderRadius: 12,
-    padding: 14,
+    flexDirection: 'row',
+    backgroundColor: '#EFF6FF',
+    borderRadius: 10,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
   },
-  infoBannerText: { fontSize: 13, color: '#1565C0', lineHeight: 18 },
+  infoBannerText: { flex: 1, fontSize: 13, color: '#1E3A8A', lineHeight: 20 },
 });

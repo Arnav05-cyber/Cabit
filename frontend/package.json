@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@mapbox/polyline": "^1.2.1",
+    "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/datetimepicker": "^8.6.0",
     "@react-navigation/bottom-tabs": "^7.15.5",
     "@react-navigation/native": "^7.1.33",
@@ -17,6 +18,8 @@
     "@stomp/stompjs": "^7.3.0",
     "axios": "^1.13.6",
     "expo": "^55.0.8",
+    "expo-auth-session": "~55.0.12",
+    "expo-crypto": "~55.0.13",
     "expo-secure-store": "~55.0.9",
     "expo-status-bar": "~55.0.4",
     "nativewind": "^4.2.2",

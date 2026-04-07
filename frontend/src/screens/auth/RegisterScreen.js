@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 
 export default function RegisterScreen({ navigation }) {
@@ -55,56 +56,58 @@ export default function RegisterScreen({ navigation }) {
   };
 
   const inputStyle = {
-    backgroundColor: '#F5F7FF',
-    borderRadius: 12,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 10,
     padding: 14,
     fontSize: 15,
-    color: '#1A237E',
+    color: '#0F172A',
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#E3F2FD',
+    borderColor: '#E2E8F0',
   };
 
-  const labelStyle = { fontSize: 12, color: '#546E7A', fontWeight: '600', marginBottom: 6 };
+  const labelStyle = { fontSize: 12, color: '#475569', fontWeight: '600', marginBottom: 8, letterSpacing: 0.5 };
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ flex: 1, backgroundColor: '#1A237E' }}
+      style={{ flex: 1, backgroundColor: '#F8FAFC' }}
     >
       <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24 }}>
         {/* Header */}
-        <View style={{ alignItems: 'center', marginBottom: 36 }}>
+        <View style={{ alignItems: 'center', marginBottom: 36, marginTop: 24 }}>
           <View style={{
-            width: 70, height: 70, borderRadius: 35,
-            backgroundColor: '#42A5F5',
+            width: 64, height: 64, borderRadius: 16,
+            backgroundColor: '#0F172A',
             alignItems: 'center', justifyContent: 'center',
-            marginBottom: 12,
+            marginBottom: 16,
           }}>
-            <Text style={{ fontSize: 30 }}>🎓</Text>
+            <Ionicons name="school" size={32} color="#FFFFFF" />
           </View>
-          <Text style={{ color: '#fff', fontSize: 28, fontWeight: '800', letterSpacing: 2 }}>CABIT</Text>
-          <Text style={{ color: '#90CAF9', fontSize: 13, marginTop: 4 }}>Join the student carpool network</Text>
+          <Text style={{ color: '#0F172A', fontSize: 28, fontWeight: '800', letterSpacing: 1 }}>CABIT</Text>
+          <Text style={{ color: '#64748B', fontSize: 13, marginTop: 4, letterSpacing: 0.5, textTransform: 'uppercase' }}>Join the student network</Text>
         </View>
 
         {/* Card */}
         <View style={{
-          backgroundColor: '#fff',
-          borderRadius: 24,
+          backgroundColor: '#FFFFFF',
+          borderRadius: 16,
           padding: 24,
+          borderWidth: 1,
+          borderColor: '#E2E8F0',
           shadowColor: '#000',
-          shadowOpacity: 0.2,
-          shadowRadius: 20,
-          elevation: 10,
+          shadowOpacity: 0.05,
+          shadowRadius: 12,
+          elevation: 2,
         }}>
-          <Text style={{ fontSize: 22, fontWeight: '700', color: '#1A237E', marginBottom: 4 }}>Create Account</Text>
-          <Text style={{ fontSize: 14, color: '#78909C', marginBottom: 24 }}>Sign up with your university email</Text>
+          <Text style={{ fontSize: 20, fontWeight: '700', color: '#0F172A', marginBottom: 4 }}>Create Account</Text>
+          <Text style={{ fontSize: 14, color: '#64748B', marginBottom: 24 }}>Sign up with your university email</Text>
 
           <Text style={labelStyle}>FULL NAME</Text>
           <TextInput
             style={inputStyle}
             placeholder="Your full name"
-            placeholderTextColor="#B0BEC5"
+            placeholderTextColor="#94A3B8"
             value={name}
             onChangeText={setName}
           />
@@ -113,7 +116,7 @@ export default function RegisterScreen({ navigation }) {
           <TextInput
             style={inputStyle}
             placeholder="your@university.edu"
-            placeholderTextColor="#B0BEC5"
+            placeholderTextColor="#94A3B8"
             keyboardType="email-address"
             autoCapitalize="none"
             value={email}
@@ -124,7 +127,7 @@ export default function RegisterScreen({ navigation }) {
           <TextInput
             style={inputStyle}
             placeholder="Your phone number"
-            placeholderTextColor="#B0BEC5"
+            placeholderTextColor="#94A3B8"
             keyboardType="phone-pad"
             value={phoneNumber}
             onChangeText={setPhoneNumber}
@@ -134,7 +137,7 @@ export default function RegisterScreen({ navigation }) {
           <TextInput
             style={inputStyle}
             placeholder="e.g. Home, Hostel"
-            placeholderTextColor="#B0BEC5"
+            placeholderTextColor="#94A3B8"
             value={place1}
             onChangeText={setPlace1}
           />
@@ -143,7 +146,7 @@ export default function RegisterScreen({ navigation }) {
           <TextInput
             style={inputStyle}
             placeholder="e.g. Campus, Work"
-            placeholderTextColor="#B0BEC5"
+            placeholderTextColor="#94A3B8"
             value={place2}
             onChangeText={setPlace2}
           />
@@ -152,12 +155,12 @@ export default function RegisterScreen({ navigation }) {
           <TextInput
             style={inputStyle}
             placeholder="Create a password"
-            placeholderTextColor="#B0BEC5"
+            placeholderTextColor="#94A3B8"
             secureTextEntry
             value={password}
             onChangeText={setPassword}
           />
-          <Text style={{ fontSize: 11, color: '#90A4AE', marginTop: -10, marginBottom: 14 }}>
+          <Text style={{ fontSize: 11, color: '#94A3B8', marginTop: -10, marginBottom: 14 }}>
             Must include uppercase, lowercase, digit & special char (!@#$%^&*()-+)
           </Text>
 
@@ -165,7 +168,7 @@ export default function RegisterScreen({ navigation }) {
           <TextInput
             style={inputStyle}
             placeholder="Confirm your password"
-            placeholderTextColor="#B0BEC5"
+            placeholderTextColor="#94A3B8"
             secureTextEntry
             value={confirmPassword}
             onChangeText={setConfirmPassword}
@@ -175,28 +178,24 @@ export default function RegisterScreen({ navigation }) {
             onPress={handleRegister}
             disabled={loading}
             style={{
-              backgroundColor: '#1565C0',
-              borderRadius: 14,
-              padding: 16,
+              backgroundColor: '#2563EB',
+              borderRadius: 10,
+              padding: 14,
               alignItems: 'center',
-              shadowColor: '#1565C0',
-              shadowOpacity: 0.4,
-              shadowRadius: 8,
-              elevation: 6,
               marginBottom: 16,
             }}
           >
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>Create Account</Text>
+              <Text style={{ color: '#fff', fontSize: 15, fontWeight: '600' }}>Create Account</Text>
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-            <Text style={{ textAlign: 'center', color: '#546E7A', fontSize: 14 }}>
+          <TouchableOpacity onPress={() => navigation.navigate('Login')} style={{ alignItems: 'center' }}>
+            <Text style={{ color: '#64748B', fontSize: 14 }}>
               Already have an account?{' '}
-              <Text style={{ color: '#1565C0', fontWeight: '700' }}>Sign In</Text>
+              <Text style={{ color: '#2563EB', fontWeight: '600' }}>Sign In</Text>
             </Text>
           </TouchableOpacity>
         </View>
