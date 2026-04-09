@@ -26,6 +26,9 @@ public class UserInfo {
     @Column(name = "email")  // Added email field
     private String email;
 
+    @Column(name = "phone_number")
+    private String phoneNumber;
+
     @Column(name = "place1")
     private String place1;
 

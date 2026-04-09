@@ -6,7 +6,7 @@ import * as SecureStore from 'expo-secure-store';
 //  Spring Cloud Gateway (port 8080).
 //  Change this ONE line when deploying to a different host.
 // ─────────────────────────────────────────────────────────
-export const GATEWAY_BASE = 'http://192.168.1.17:8080';
+export const GATEWAY_BASE = 'http://10.79.106.9:8080';
 
 // Auth Service calls (public — no JWT required)
 export const authApi = axios.create({

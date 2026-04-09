@@ -95,6 +95,9 @@ public class TokenController {
                             .userName(userName)
                             .email(email)
                             .userId(userId)
+                            .phoneNumber(userInfo != null ? userInfo.getPhoneNumber() : null)
+                            .place1(userInfo != null ? userInfo.getPlace1() : null)
+                            .place2(userInfo != null ? userInfo.getPlace2() : null)
                             .build(),
                     HttpStatus.OK
             );
@@ -125,6 +128,9 @@ public class TokenController {
                             .userName(userInfo.getUserName())
                             .email(userInfo.getEmail())
                             .userId(userInfo.getUserId())
+                            .phoneNumber(userInfo.getPhoneNumber())
+                            .place1(userInfo.getPlace1())
+                            .place2(userInfo.getPlace2())
                             .build();
                 })
                 .orElseThrow(() ->
@@ -160,6 +166,9 @@ public class TokenController {
                                 .userName(userInfo.getUserName())
                                 .email(userInfo.getEmail())
                                 .userId(userInfo.getUserId())
+                                .phoneNumber(userInfo.getPhoneNumber())
+                                .place1(userInfo.getPlace1())
+                                .place2(userInfo.getPlace2())
                                 .build(),
                         HttpStatus.OK
                 );

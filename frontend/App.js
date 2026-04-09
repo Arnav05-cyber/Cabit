@@ -16,6 +16,8 @@ import OfferRideScreen from './src/screens/OfferRideScreen';
 import MyBookingsScreen from './src/screens/MyBookingsScreen';
 import RideDetailScreen from './src/screens/RideDetailScreen';
 
+import CompleteProfileScreen from './src/screens/auth/CompleteProfileScreen';
+
 import './global.css';
 
 const Stack = createNativeStackNavigator();
@@ -83,9 +85,22 @@ function RootNavigator() {
     );
   }
 
+  // Determine if authenticated but missing critical profile details
+  const isAuth = !!user;
+  const needsProfile = isAuth && !user.isProfileComplete;
+
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {user ? (
+      {!isAuth ? (
+        // Auth Stack
+        <>
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Register" component={RegisterScreen} />
+        </>
+      ) : needsProfile ? (
+        // Registration Completion Gate
+        <Stack.Screen name="CompleteProfile" component={CompleteProfileScreen} />
+      ) : (
         // Authenticated Stack
         <>
           <Stack.Screen name="Main" component={MainTabs} />
@@ -101,12 +116,6 @@ function RootNavigator() {
               headerBackTitleVisible: false,
             }}
           />
-        </>
-      ) : (
-        // Auth Stack
-        <>
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Register" component={RegisterScreen} />
         </>
       )}
     </Stack.Navigator>

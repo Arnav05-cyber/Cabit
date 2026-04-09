@@ -1,4 +1,4 @@
-package org.example.response;
+package org.example.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,12 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class JwtResponseDTO {
-    private String accessToken;
-    private String token;
-    private String userName;
-    private String email;
-    private String userId;
+public class ProfileUpdateRequestDTO {
     private String phoneNumber;
     private String place1;
     private String place2;

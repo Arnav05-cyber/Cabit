@@ -7,8 +7,7 @@ import {
   ActivityIndicator,
   Alert,
   RefreshControl,
-  StyleSheet,
-  StyleSheet,
+  StyleSheet
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { rideApi } from '../api/apiClient';

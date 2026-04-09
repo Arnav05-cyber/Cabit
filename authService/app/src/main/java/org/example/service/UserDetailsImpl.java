@@ -71,6 +71,7 @@ public class UserDetailsImpl implements UserDetailsService {
             userInfoDto.getUserName(), 
             encodedPassword, 
             userInfoDto.getEmail(), 
+            userInfoDto.getPhoneNumber(),
             userInfoDto.getPlace1(), 
             userInfoDto.getPlace2(), 
             new java.util.HashSet<>()
@@ -105,6 +106,7 @@ public class UserDetailsImpl implements UserDetailsService {
             email, // Use email as username
             encodedPassword, 
             email, 
+            "", // phoneNumber
             "", // place1
             "", // place2
             new java.util.HashSet<>()
@@ -128,6 +130,33 @@ public class UserDetailsImpl implements UserDetailsService {
 
         outboxEventService.saveUserEvent(userInfoDto);
 
+        return user;
+    }
+    @Transactional
+    public UserInfo updateOAuthUserProfile(UserInfo user, org.example.request.ProfileUpdateRequestDTO dto) {
+        user.setPhoneNumber(dto.getPhoneNumber());
+        user.setPlace1(dto.getPlace1());
+        user.setPlace2(dto.getPlace2());
+        userRepo.save(user);
+
+        // Notify downstream services via outbox
+        UserInfoDto userInfoDto = new UserInfoDto();
+        userInfoDto.setUserId(user.getUserId());
+        userInfoDto.setUserName(user.getUserName());
+        userInfoDto.setEmail(user.getEmail());
+        userInfoDto.setPhoneNumber(user.getPhoneNumber());
+        userInfoDto.setPlace1(user.getPlace1());
+        userInfoDto.setPlace2(user.getPlace2());
+        
+        if (user.getUserName() != null) {
+            String[] parts = user.getUserName().split(" ", 2);
+            userInfoDto.setFirstName(parts[0]);
+            if (parts.length > 1) {
+                userInfoDto.setLastName(parts[1]);
+            }
+        }
+
+        outboxEventService.saveUserEvent(userInfoDto);
         return user;
     }
 

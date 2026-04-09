@@ -61,9 +61,34 @@ public class AuthController {
                     .userName(userInfoDto.getUserName())
                     .email(userInfoDto.getEmail())
                     .userId(savedUser.getUserId())
+                    .phoneNumber(savedUser.getPhoneNumber())
+                    .place1(savedUser.getPlace1())
+                    .place2(savedUser.getPlace2())
                     .build(), HttpStatus.OK);
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("message", "Internal server error: " + e.getMessage()));
+        }
+    }
+
+    @PutMapping("/auth/v1/complete-profile")
+    public ResponseEntity<?> completeProfile(@RequestHeader("Authorization") String authHeader, @RequestBody org.example.request.ProfileUpdateRequestDTO request) {
+        try {
+            String token = authHeader.substring(7); // Remove "Bearer "
+            String username = jwtService.extractUsername(token);
+            UserInfo user = userRepo.findByUserName(username);
+            if (user == null) {
+                return ResponseEntity.status(404).body(Map.of("message", "User not found"));
+            }
+
+            UserInfo updatedUser = userDetailsImpl.updateOAuthUserProfile(user, request);
+            return ResponseEntity.ok(Map.of(
+                "message", "Profile updated successfully",
+                "phoneNumber", updatedUser.getPhoneNumber(),
+                "place1", updatedUser.getPlace1(),
+                "place2", updatedUser.getPlace2()
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("message", "Failed to update profile: " + e.getMessage()));
         }
     }
 

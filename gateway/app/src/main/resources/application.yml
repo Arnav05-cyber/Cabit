@@ -66,6 +66,13 @@ spring:
           predicates:
             - Path=/auth/v1/refreshToken
 
+        - id: auth-secure
+          uri: http://auth-service:9820
+          predicates:
+            - Path=/auth/v1/complete-profile
+          filters:
+            - JwtAuthFilter
+
         # -------------------------------------------------
         # RIDE SERVICE — JWT required
         # -------------------------------------------------
