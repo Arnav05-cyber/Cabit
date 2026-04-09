@@ -92,7 +92,15 @@ spring:
             - Path=/user/**
           filters:
             - JwtAuthFilter
-
+        # -------------------------------------------------
+        # NOTIFICATION SERVICE — Websockets (JWT required)
+        # -------------------------------------------------
+        - id: notification-service-ws
+          uri: http://notification-service:8084
+          predicates:
+            - Path=/ws/**
+          filters:
+            - JwtAuthFilter
 # ===============================
 # Server
 # ===============================

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import { NOTIF_BASE } from '../api/apiClient';
+import { GATEWAY_BASE } from '../api/apiClient';
 import * as SecureStore from 'expo-secure-store';
 
 const WebSocketContext = createContext(null);
@@ -15,7 +15,7 @@ export const WebSocketProvider = ({ children }) => {
     const connect = async () => {
       const token = await SecureStore.getItemAsync('jwt_token');
       const client = new Client({
-        webSocketFactory: () => new SockJS(`${NOTIF_BASE}/ws`),
+        webSocketFactory: () => new SockJS(`${GATEWAY_BASE}/ws`),
         connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},
         reconnectDelay: 5000,
         onConnect: () => {
