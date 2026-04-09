@@ -1,10 +1,10 @@
 package org.example.service;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import org.example.entities.UserInfo;
 import org.example.model.UserInfoDto;
+import org.example.outbox.OutboxEventService;
 import org.example.repos.UserRepo;
 import org.example.utils.ValidateUserUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,8 +29,10 @@ public class UserDetailsImpl implements UserDetailsService {
     @Autowired
     private final PasswordEncoder passwordEncoder;
 
+    // OutboxEventService replaces direct Kafka publishing.
+    // Events are written to the DB atomically with the user record.
     @Autowired
-    private final KafkaEventSender kafkaEventSender;
+    private final OutboxEventService outboxEventService;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -74,10 +76,11 @@ public class UserDetailsImpl implements UserDetailsService {
             new java.util.HashSet<>()
         ));
         
-        // Send Kafka event to USER SERVICE (for user profile)
+        // Write to outbox table atomically — same @Transactional as userRepo.save() above.
+        // The OutboxPoller will pick this up within 5 seconds and publish to Kafka.
         userInfoDto.setPassword(null);
         userInfoDto.setUserId(userId);
-        kafkaEventSender.trySendingEvent(userInfoDto);
+        outboxEventService.saveUserEvent(userInfoDto);
         return true;
     }
 
@@ -108,14 +111,13 @@ public class UserDetailsImpl implements UserDetailsService {
         );
         
         userRepo.save(user);
-        
-        // Send Kafka event to USER SERVICE
+
+        // Write Kafka event to outbox atomically — same @Transactional as userRepo.save() above.
         UserInfoDto userInfoDto = new UserInfoDto();
         userInfoDto.setUserId(userId);
-        userInfoDto.setUserName(email); // Use email as username
+        userInfoDto.setUserName(email);
         userInfoDto.setEmail(email);
-        
-        // Split name into first and last name if possible
+
         if (name != null) {
             String[] parts = name.split(" ", 2);
             userInfoDto.setFirstName(parts[0]);
@@ -123,9 +125,9 @@ public class UserDetailsImpl implements UserDetailsService {
                 userInfoDto.setLastName(parts[1]);
             }
         }
-        
-        kafkaEventSender.trySendingEvent(userInfoDto);
-        
+
+        outboxEventService.saveUserEvent(userInfoDto);
+
         return user;
     }
 

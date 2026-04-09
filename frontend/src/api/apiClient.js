@@ -1,20 +1,22 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-// Base URLs for different services
-export const AUTH_BASE = 'http://192.168.1.17:8081';
-export const RIDE_BASE = 'http://192.168.1.17:8082';
-export const NOTIF_BASE = 'http://192.168.1.17:8084';
+// ─────────────────────────────────────────────────────────
+//  Single entry point — all traffic routes through the
+//  Spring Cloud Gateway (port 8080).
+//  Change this ONE line when deploying to a different host.
+// ─────────────────────────────────────────────────────────
+const GATEWAY_BASE = 'http://192.168.1.17:8080';
 
-// Auth Service instance
+// Auth Service calls (public — no JWT required)
 export const authApi = axios.create({
-  baseURL: AUTH_BASE,
+  baseURL: GATEWAY_BASE,
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Ride Service instance
+// Ride / protected service calls (JWT attached automatically below)
 export const rideApi = axios.create({
-  baseURL: RIDE_BASE,
+  baseURL: GATEWAY_BASE,
   headers: { 'Content-Type': 'application/json' },
 });
 

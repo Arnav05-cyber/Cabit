@@ -66,12 +66,32 @@ services:
     ports:
       - "9411:9411"
 
-  # --- APPLICATION SERVICES ---
+  # --- API GATEWAY (single public entry point) ---
+  gateway:
+    build: ./gateway
+    image: cabit-gateway
+    ports:
+      - "8080:8080"   # The ONLY public port — all traffic enters here
+    depends_on:
+      auth-service:
+        condition: service_started
+      ride-service:
+        condition: service_started
+      user-service:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    environment:
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+
+  # --- APPLICATION SERVICES (internal only — no public ports) ---
   auth-service:
     build: ./authService
     image: auth-service
-    ports:
-      - "8081:9820"
+    # Port is intentionally NOT exposed publicly — traffic routes via gateway
+    expose:
+      - "9820"
     depends_on:
       mysql:
         condition: service_healthy
@@ -81,8 +101,8 @@ services:
   user-service:
     build: ./userService
     image: user-service
-    ports:
-      - "8086:9810"
+    expose:
+      - "9810"
     depends_on:
       mysql:
         condition: service_healthy
@@ -92,8 +112,8 @@ services:
   ride-service:
     build: ./rideService
     image: ride-service
-    ports:
-      - "8082:8080"
+    expose:
+      - "8080"
     depends_on:
       mysql:
         condition: service_healthy
@@ -107,8 +127,8 @@ services:
   notification-service:
     build: ./notificationservice
     image: notification-service
-    ports:
-      - "8084:8084"
+    expose:
+      - "8084"
     depends_on:
       kafka:
         condition: service_healthy

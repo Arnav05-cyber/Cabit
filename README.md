@@ -10,6 +10,7 @@ The system is split into four primary microservices: `auth-service`, `user-servi
 sequenceDiagram
     participant App as Mobile App
     participant Google as Google OAuth
+    participant GW as API Gateway (Port 8080)
     participant AuthService
     participant Kafka
     participant UserService
@@ -19,13 +20,19 @@ sequenceDiagram
     participant Nom as Nominatim
     participant Zipkin as Zipkin (Tracing)
 
+    Note over GW: Rate Limiter (Redis) — 20 req/s per IP
+
     App->>Google: Authenticate (Sign in with Google)
     Google-->>App: Google ID Token
-    App->>AuthService: POST /auth/v1/google (ID Token)
+    App->>GW: POST /auth/v1/google (no JWT required)
+    GW->>AuthService: Forward (public route)
     AuthService-->AuthService: Verify Cryptographic Signature
     AuthService-->>Zipkin: Export Trace [TraceID: X]
-    AuthService->>Kafka: Publish "User Info Event"
+    AuthService->>Kafka: Publish to outbox_events (same DB tx)
     AuthService-->>App: 200 OK (Cabit JWT)
+
+    Note over AuthService: OutboxPoller runs every 5s
+    AuthService->>Kafka: Publish "User Info Event" (from outbox)
 
     par Async Profile Creation
         Kafka->>UserService: Consume Event
@@ -33,7 +40,9 @@ sequenceDiagram
         UserService->>RedisGeo: Cache User Contact Info
     end
 
-    App->>RideService: POST /v1/ride/create
+    App->>GW: POST /v1/ride/create (Bearer JWT)
+    GW-->GW: JwtAuthFilter validates token → inject X-User-Id header
+    GW->>RideService: Forward (authenticated)
     RideService-->>Zipkin: Export Trace [TraceID: Y]
     RideService->>Nom: Geocode From/To Addresses
     RideService->>ORS: Calculate Route Polyline
