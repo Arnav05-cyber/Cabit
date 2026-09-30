@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import * as Google from "expo-auth-session/providers/google";
+import { makeRedirectUri } from "expo-auth-session";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../../context/AuthContext";
 
@@ -25,8 +26,10 @@ export default function LoginScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
 
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    clientId:
-      "313010278557-qdf70pdnj7q821uan3cii0m9jl02qr8h.apps.googleusercontent.com",
+    // You must use platform-specific Client IDs for Google Auth to work in Expo Go/Simulators
+    webClientId: "313010278557-qdf70pdnj7q821uan3cii0m9jl02qr8h.apps.googleusercontent.com",
+    androidClientId: "313010278557-a4kp8p7h1dqbrtkn7e0pmskg9tjjdhgu.apps.googleusercontent.com",
+    redirectUri: makeRedirectUri({ scheme: "cabit" }),
   });
 
   React.useEffect(() => {

@@ -35,10 +35,10 @@ public class RideController {
         return ride;
     }
 
-    @PutMapping("/{rideId}/close")
-    public RideResponse closeRide(@PathVariable String rideId, Authentication authentication) {
+    @PutMapping("/{rideId}/status")
+    public RideResponse updateRideStatus(@PathVariable String rideId, @RequestParam org.example.enums.RideStatus status, Authentication authentication) {
         String username = authentication.getName();
-        return rideService.closeRide(rideId, username);
+        return rideService.updateRideStatus(rideId, username, status);
     }
 
     @DeleteMapping("/{rideId}")

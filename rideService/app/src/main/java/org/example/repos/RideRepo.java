@@ -13,21 +13,24 @@ import java.util.List;
 
 public interface RideRepo extends JpaRepository<Ride, String> {
 
-    Page<Ride> findByToLocation(String toLocation, Pageable pageable);
+    Page<Ride> findByToLocationAndRideStatusNot(String toLocation, RideStatus status, Pageable pageable);
 
-    Page<Ride> findBySeatsAvailableGreaterThan(Integer seatsAvailable, Pageable pageable);
+    Page<Ride> findBySeatsAvailableGreaterThanAndRideStatusNot(Integer seatsAvailable, RideStatus status, Pageable pageable);
 
-    Page<Ride> findByToLocationAndSeatsAvailableGreaterThan(
+    Page<Ride> findByToLocationAndSeatsAvailableGreaterThanAndRideStatusNot(
             String toLocation,
             Integer seatsAvailable,
+            RideStatus status,
             Pageable pageable
     );
 
-    Page<Ride> findByDepartureTimeAfter(LocalDateTime time, Pageable pageable);
+    Page<Ride> findByDepartureTimeAfterAndRideStatusNot(LocalDateTime time, RideStatus status, Pageable pageable);
 
-    Page<Ride> findByDepartureTimeBetween(LocalDateTime start, LocalDateTime end, Pageable pageable);
+    Page<Ride> findByDepartureTimeBetweenAndRideStatusNot(LocalDateTime start, LocalDateTime end, RideStatus status, Pageable pageable);
 
-    Page<Ride> findByDepartureTimeBefore(LocalDateTime time, Pageable pageable);
+    Page<Ride> findByDepartureTimeBeforeAndRideStatusNot(LocalDateTime time, RideStatus status, Pageable pageable);
+
+    Page<Ride> findByRideStatusNot(RideStatus status, Pageable pageable);
 
     @Query("SELECT r FROM Ride r WHERE r.rideStatus = :status AND r.seatsAvailable > 0 AND r.departureTime > :now")
     List<Ride> findUpcomingAvailableRides(@Param("status") RideStatus status, @Param("now") LocalDateTime now);

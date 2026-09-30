@@ -103,12 +103,12 @@ public class RideServiceImpl implements RideService {
 
     @Override
     @Transactional
-    public RideResponse closeRide(String rideId, String userId) {
+    public RideResponse updateRideStatus(String rideId, String userId, RideStatus status) {
         Ride ride = rideRepo.findById(rideId).orElseThrow(() -> new RideNotFoundException("Ride not found"));
         if (!ride.getCreaterId().equals(userId)) {
             throw new InvalidRideActionException("You are not the creator of this ride.");
         }
-        ride.setRideStatus(RideStatus.CLOSED);
+        ride.setRideStatus(status);
         rideRepo.save(ride);
         return mapToResponse(ride);
     }
@@ -207,19 +207,21 @@ public class RideServiceImpl implements RideService {
 
     @Override
     public Page<RideResponse> getAllRides(Pageable pageable) {
-        return rideRepo.findAll(pageable).map(this::mapToResponse);
+        return rideRepo.findByRideStatusNot(RideStatus.CLOSED, pageable).map(this::mapToResponse);
     }
 
     @Override
     public Page<RideResponse> getRides(String toLocation, Boolean availableSeats, LocalDateTime before, LocalDateTime after, Pageable pageable) {
         Page<Ride> rides;
-        if (before != null && after != null) rides = rideRepo.findByDepartureTimeBetween(after, before, pageable);
-        else if (before != null) rides = rideRepo.findByDepartureTimeBefore(before, pageable);
-        else if (after != null) rides = rideRepo.findByDepartureTimeAfter(after, pageable);
-        else if (toLocation != null && Boolean.TRUE.equals(availableSeats)) rides = rideRepo.findByToLocationAndSeatsAvailableGreaterThan(toLocation, 0, pageable);
-        else if (toLocation != null) rides = rideRepo.findByToLocation(toLocation, pageable);
-        else if (Boolean.TRUE.equals(availableSeats)) rides = rideRepo.findBySeatsAvailableGreaterThan(0, pageable);
-        else rides = rideRepo.findAll(pageable);
+        RideStatus excludeStatus = RideStatus.CLOSED;
+        
+        if (before != null && after != null) rides = rideRepo.findByDepartureTimeBetweenAndRideStatusNot(after, before, excludeStatus, pageable);
+        else if (before != null) rides = rideRepo.findByDepartureTimeBeforeAndRideStatusNot(before, excludeStatus, pageable);
+        else if (after != null) rides = rideRepo.findByDepartureTimeAfterAndRideStatusNot(after, excludeStatus, pageable);
+        else if (toLocation != null && Boolean.TRUE.equals(availableSeats)) rides = rideRepo.findByToLocationAndSeatsAvailableGreaterThanAndRideStatusNot(toLocation, 0, excludeStatus, pageable);
+        else if (toLocation != null) rides = rideRepo.findByToLocationAndRideStatusNot(toLocation, excludeStatus, pageable);
+        else if (Boolean.TRUE.equals(availableSeats)) rides = rideRepo.findBySeatsAvailableGreaterThanAndRideStatusNot(0, excludeStatus, pageable);
+        else rides = rideRepo.findByRideStatusNot(excludeStatus, pageable);
 
         return rides.map(this::mapToResponse);
     }

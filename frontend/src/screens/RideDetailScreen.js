@@ -65,22 +65,30 @@ export default function RideDetailScreen({ route, navigation }) {
     return () => unsubscribe(topic);
   }, [rideId, connected]);
 
-  const handleCloseRide = async () => {
-    Alert.alert('Close Ride', 'Are you sure you want to close this ride? No more passengers will be able to join.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Close', style: 'destructive', onPress: async () => {
-        setClosing(true);
-        try {
-          await rideApi.put(`/rides/${rideId}/close`);
-          setRide((prev) => ({ ...prev, status: 'CLOSED', rideStatus: 'CLOSED' }));
-          Alert.alert('Closed', 'The ride has been closed.');
-        } catch (err) {
-          Alert.alert('Error', 'Failed to close ride.');
-        } finally {
-          setClosing(false);
+  const handleUpdateStatus = async (newStatus) => {
+    Alert.alert(
+      `Mark as ${newStatus}`,
+      `Are you sure you want to change the status to ${newStatus}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Confirm', 
+          style: newStatus === 'CLOSED' ? 'destructive' : 'default', 
+          onPress: async () => {
+            setClosing(true);
+            try {
+              await rideApi.put(`/rides/${rideId}/status?status=${newStatus}`);
+              setRide((prev) => ({ ...prev, status: newStatus, rideStatus: newStatus }));
+              Alert.alert('Success', `The ride is now ${newStatus}.`);
+            } catch (err) {
+              Alert.alert('Error', 'Failed to update ride status.');
+            } finally {
+              setClosing(false);
+            }
+          }
         }
-      }}
-    ]);
+      ]
+    );
   };
 
   const handleDeleteRide = async () => {
@@ -249,23 +257,35 @@ export default function RideDetailScreen({ route, navigation }) {
 
         {/* Creator Actions */}
         {user?.name === ride.createrId && (
-          <View style={styles.actionRow}>
-            {(ride.status !== 'CLOSED' && ride.rideStatus !== 'CLOSED') && (
+          <View style={{ marginTop: 20 }}>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: '#64748B', marginBottom: 10, textTransform: 'uppercase' }}>Change Status</Text>
+            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
               <TouchableOpacity
-                style={[styles.actionButton, { backgroundColor: '#F59E0B' }]}
-                onPress={handleCloseRide}
-                disabled={closing}
+                style={[styles.actionButton, { backgroundColor: ride.status === 'OPEN' || ride.rideStatus === 'OPEN' ? '#3B82F6' : '#E2E8F0', paddingVertical: 10 }]}
+                onPress={() => handleUpdateStatus('OPEN')}
+                disabled={closing || ride.status === 'OPEN' || ride.rideStatus === 'OPEN'}
               >
-                {closing ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <>
-                    <Ionicons name="lock-closed" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
-                    <Text style={styles.actionButtonText}>Close Ride</Text>
-                  </>
-                )}
+                <Text style={[styles.actionButtonText, { color: ride.status === 'OPEN' || ride.rideStatus === 'OPEN' ? '#FFFFFF' : '#64748B' }]}>OPEN</Text>
               </TouchableOpacity>
-            )}
+              
+              <TouchableOpacity
+                style={[styles.actionButton, { backgroundColor: ride.status === 'FULL' || ride.rideStatus === 'FULL' ? '#F59E0B' : '#E2E8F0', paddingVertical: 10 }]}
+                onPress={() => handleUpdateStatus('FULL')}
+                disabled={closing || ride.status === 'FULL' || ride.rideStatus === 'FULL'}
+              >
+                <Text style={[styles.actionButtonText, { color: ride.status === 'FULL' || ride.rideStatus === 'FULL' ? '#FFFFFF' : '#64748B' }]}>FULL</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.actionButton, { backgroundColor: ride.status === 'CLOSED' || ride.rideStatus === 'CLOSED' ? '#64748B' : '#E2E8F0', paddingVertical: 10 }]}
+                onPress={() => handleUpdateStatus('CLOSED')}
+                disabled={closing || ride.status === 'CLOSED' || ride.rideStatus === 'CLOSED'}
+              >
+                <Text style={[styles.actionButtonText, { color: ride.status === 'CLOSED' || ride.rideStatus === 'CLOSED' ? '#FFFFFF' : '#64748B' }]}>CLOSED</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ height: 1, backgroundColor: '#E2E8F0', marginBottom: 16 }} />
 
             <TouchableOpacity
               style={[styles.actionButton, { backgroundColor: '#EF4444' }]}
@@ -277,7 +297,7 @@ export default function RideDetailScreen({ route, navigation }) {
               ) : (
                 <>
                   <Ionicons name="trash-outline" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
-                  <Text style={styles.actionButtonText}>Delete</Text>
+                  <Text style={styles.actionButtonText}>Delete Ride</Text>
                 </>
               )}
             </TouchableOpacity>

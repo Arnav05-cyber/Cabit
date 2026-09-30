@@ -79,7 +79,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   const completeProfile = async ({ phoneNumber, place1, place2 }) => {
-    const response = await authApi.put('/auth/v1/complete-profile', { phoneNumber, place1, place2 });
+    const currentToken = token || await SecureStore.getItemAsync('jwt_token');
+    const response = await authApi.put(
+      '/auth/v1/complete-profile', 
+      { phoneNumber, place1, place2 },
+      { headers: { Authorization: `Bearer ${currentToken}` } }
+    );
     
     // Update local user state
     const updatedUserData = {

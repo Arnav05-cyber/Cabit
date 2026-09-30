@@ -13,7 +13,7 @@ public interface RideService {
 
     RideResponse createRide(CreateRideRequest request, String userId);
 
-    RideResponse closeRide(String rideId, String userId);
+    RideResponse updateRideStatus(String rideId, String userId, org.example.enums.RideStatus status);
 
     void deleteRide(String rideId, String userId);
 
